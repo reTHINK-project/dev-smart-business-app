@@ -2,7 +2,7 @@ let domain = 'localhost';
 let currentUser = null;
 let userStatus = null;
 
-let chat = null;
+// let chat = null;
 let userDirectory = [
     ['openidtest10@gmail.com', 'Test Open ID 10', 'localhost'],
     ['openidtest20@gmail.com', 'Test Open ID 20', 'localhost'],
@@ -11,7 +11,7 @@ let userDirectory = [
 
 const userStatusHyperty = (domain) => `hyperty-catalogue://${domain}/.well-known/hyperty/UserStatusHyperty`;
 
-const chatHyperty = (domain) => `hyperty-catalogue://${domain}/.well-known/hyperty/HypertyChat`;
+// const chatHyperty = (domain) => `hyperty-catalogue://${domain}/.well-known/hyperty/HypertyChat`;
 
 rethink.default.install({
   domain: domain,
@@ -22,9 +22,9 @@ rethink.default.install({
         console.log('start smart business app', result.name, result);
         init();
 
-        runtime.requireHyperty(chatHyperty(domain)).then((result) => {
-          chat = result.instance;
-        });
+        // runtime.requireHyperty(chatHyperty(domain)).then((result) => {
+        //   chat = result.instance;
+        // });
       }).catch(function() {
       console.error('cant load UserStatus hyperty');
     });
@@ -38,7 +38,7 @@ function init() {
   userStatus.addEventListener('statusChange', function(event) {
     console.log('handle statusChange event for', event);
     let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.email : 'none';
-    $('#user-list').children('[rel="' + email + '"]').removeClass('state-disconnected state-connected state-busy').addClass('state-' + event.status.status);
+    $('#user-list').children('[rel="' + email + '"]').removeClass('state-disconnected state-connected state-busy').addClass('state-' + event.status);
     if (currentUser === null) {
       currentUser = email;
       $('#currentUser').html(currentUser);
