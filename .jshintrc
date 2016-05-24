@@ -1,0 +1,13 @@
+{
+    "esversion": 6,
+    "undef":true,
+    "unused":true,
+    "camelcase":true,
+    "globals": {
+        "$": true,
+        "console": true,
+        "rethink": true,
+        "Handlebars": true
+    },
+    "browser": true
+}

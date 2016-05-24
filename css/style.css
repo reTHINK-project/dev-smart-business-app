@@ -1,0 +1,28 @@
+@charset "UTF-8";
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+main {
+    flex: 1 0 auto;
+}
+.state-disconnected {
+    border-left: 12px solid rgba(0, 0, 0, 0.1);
+}
+.state-connected {
+    border-left: 12px solid rgba(77, 182, 148, 0.6);
+}
+.state-busy {
+    border-left: 12px solid rgba(255, 0, 0, 0.6);
+}
+.state-disconnected {
+    cursor: default;
+}
+.notification-list {
+    margin: 0;
+}
+
+#user-info-preloader {
+    margin-top: 100px;
+}
