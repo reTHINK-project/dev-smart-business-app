@@ -5,7 +5,7 @@ body {
     flex-direction: column;
 }
 main {
-    flex: 1 0 auto;
+    flex: 1 1 auto;
 }
 .state-disconnected {
     border-left: 12px solid rgba(0, 0, 0, 0.1);
@@ -23,6 +23,36 @@ main {
     margin: 0;
 }
 
-#user-info-preloader {
-    margin-top: 100px;
+.page-flexbox-wrapper {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.avatar {
+    width: auto;
+    height : auto;
+    max-height: 100%;
+    max-width: 100%;
+}
+
+.messages {
+    max-height: 500px;
+    overflow: auto;
+}
+
+.messages .local {
+    background: rgb(254, 254, 254);
+}
+
+.messages .remote {
+    background: rgb(206, 214, 221);
+}
+
+.messages .collection-item > p {
+    clear: both;
+}
+
+.disable form.message-form {
+    display: none;
 }

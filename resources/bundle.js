@@ -2679,6 +2679,10 @@ var _HypertyDiscovery2 = _interopRequireDefault(_HypertyDiscovery);
 
 var _Syncher = require('service-framework/dist/Syncher');
 
+var _IdentityManager = require('./utils/IdentityManager.js');
+
+var _IdentityManager2 = _interopRequireDefault(_IdentityManager);
+
 var _EventEmitter2 = require('./utils/EventEmitter.js');
 
 var _EventEmitter3 = _interopRequireDefault(_EventEmitter2);
@@ -2749,6 +2753,8 @@ var UserStatus = function (_EventEmitter) {
 
     _this._hypertyDiscovery = new _HypertyDiscovery2.default(hypertyURL, bus);
 
+    _this._identityManager = new _IdentityManager2.default(hypertyURL, configuration.runtimeURL, bus);
+
     _this._objectDescURL = 'hyperty-catalogue://' + domain + '/.well-known/dataschemas/UserStatusDataSchema';
 
     _this._hypertyURL = hypertyURL;
@@ -2783,15 +2789,15 @@ var UserStatus = function (_EventEmitter) {
           status: statusObjectObserver.data.status
         });
 
-        _this2._managePresenceHeartbeat(event.identity, statusObjectObserver.data.status);
+        _this2._managePresenceHeartbeat(event.identity);
 
         statusObjectObserver.onChange('*', function () {
-          console.info('message received:', event);
+          console.info('status event received:', event);
           _this2.trigger('statusChange', {
             identity: event.identity,
             status: statusObjectObserver.data.status
           });
-          _this2._managePresenceHeartbeat(event.identity, statusObjectObserver.data.status);
+          _this2._managePresenceHeartbeat(event.identity);
         });
 
         console.log(event.identity.email, 'has subscribe to my status data object, send invite to listen mine');
@@ -2829,7 +2835,7 @@ var UserStatus = function (_EventEmitter) {
           });
           setInterval(function () {
             _this3._sendHeartbeat();
-          }, 10000);
+          }, 50000);
         }).catch(function (reason) {
           reject(reason);
         });
@@ -2863,30 +2869,40 @@ var UserStatus = function (_EventEmitter) {
       console.log('change status to', newStatus);
       this._statusObjectReporter.data.status = newStatus;
     }
+
+    /**
+     * Update status object date
+     */
+
   }, {
     key: '_sendHeartbeat',
     value: function _sendHeartbeat() {
       console.log('send heartbeat');
       this._statusObjectReporter.data.date = new Date().getTime();
     }
+
+    /**
+     * Monitor user activity within heartbeat timeout period
+     */
+
   }, {
     key: '_managePresenceHeartbeat',
-    value: function _managePresenceHeartbeat(identity, state) {
+    value: function _managePresenceHeartbeat(identity) {
       var _this5 = this;
 
-      console.log('_managePresenceHeartbeat for', identity);
-      if (state !== 'disconnected') {
-        if (identity in this._heartbeat) {
-          clearTimeout(this._heartbeat[identity]);
-        }
-        this._heartbeat[identity] = setTimeout(function () {
-          console.log(identity, 'has disconnect');
-          _this5.trigger('statusChange', {
-            identity: identity,
-            status: 'disconnected'
-          });
-        }, 20000);
+      console.log('renew heartbeat period for', identity);
+      var email = identity.email;
+      if (email in this._heartbeat) {
+        clearTimeout(this._heartbeat[email]);
       }
+      this._heartbeat[email] = setTimeout(function () {
+        console.log(email, 'has disconnect');
+        clearTimeout(_this5._heartbeat[email]);
+        _this5.trigger('statusChange', {
+          identity: identity,
+          status: 'disconnected'
+        });
+      }, 60000);
     }
   }, {
     key: '_mappingUser',
@@ -2941,7 +2957,7 @@ function activate(hypertyURL, bus, configuration) {
   };
 }
 
-},{"./utils/EventEmitter.js":5,"./utils/utils.js":6,"service-framework/dist/HypertyDiscovery":2,"service-framework/dist/Syncher":3}],5:[function(require,module,exports){
+},{"./utils/EventEmitter.js":5,"./utils/IdentityManager.js":6,"./utils/utils.js":7,"service-framework/dist/HypertyDiscovery":2,"service-framework/dist/Syncher":3}],5:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -3022,6 +3038,111 @@ var EventEmitter = function () {
 exports.default = EventEmitter;
 
 },{}],6:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /**
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 PT Inovação e Sistemas SA
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 INESC-ID
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 QUOBIS NETWORKS SL
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 FRAUNHOFER-GESELLSCHAFT ZUR FOERDERUNG DER ANGEWANDTEN FORSCHUNG E.V
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 ORANGE SA
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 Deutsche Telekom AG
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 Apizee
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Copyright 2016 TECHNISCHE UNIVERSITAT BERLIN
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Licensed under the Apache License, Version 2.0 (the "License");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * you may not use this file except in compliance with the License.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * You may obtain a copy of the License at
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     *   http://www.apache.org/licenses/LICENSE-2.0
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     *
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * Unless required by applicable law or agreed to in writing, software
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * distributed under the License is distributed on an "AS IS" BASIS,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * See the License for the specific language governing permissions and
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     * limitations under the License.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     **/
+
+
+var _utils = require('./utils');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/**
+* Core IdentityManager interface
+* Class to allow applications to search for Identities registered in runtime-core
+*/
+
+var IdentityManager = function () {
+
+  /**
+  * To initialise the IdentityManager, which will provide the support for hyperties to
+  * query about identities registered
+  * @param  {String}          hypertyURL            hypertyURL
+  * @param  {String}          runtimeURL            runtimeURL
+  * @param  {MessageBus}          msgbus                msgbus
+  */
+
+  function IdentityManager(hypertyURL, runtimeURL, msgBus) {
+    _classCallCheck(this, IdentityManager);
+
+    var _this = this;
+    _this.messageBus = msgBus;
+
+    _this.domain = (0, _utils.divideURL)(hypertyURL).domain;
+    _this.hypertyURL = hypertyURL;
+    _this.runtimeURL = runtimeURL;
+  }
+
+  /**
+  * Function to query the runtime registry about the identity to which the hyperty was associated
+  * @param {String}       hypertyURL   (Optional)
+  * @return {Promise}     userURL       userURL associated to the hyperty
+  */
+
+
+  _createClass(IdentityManager, [{
+    key: 'discoverUserRegistered',
+    value: function discoverUserRegistered(hypertyURL) {
+      var _this = this;
+      var activeDomain = void 0;
+      var activeHypertyURL = void 0;
+
+      if (!hypertyURL) {
+        activeHypertyURL = _this.hypertyURL;
+      } else {
+        activeHypertyURL = hypertyURL;
+      }
+
+      var msg = {
+        type: 'read', from: activeHypertyURL, to: _this.runtimeURL + '/registry/', body: { resource: '.', criteria: activeHypertyURL }
+      };
+
+      return new Promise(function (resolve, reject) {
+
+        _this.messageBus.postMessage(msg, function (reply) {
+
+          var userURL = reply.body.resource;
+          if (userURL) {
+            resolve(userURL);
+          } else {
+            reject('No user was not found');
+          }
+        });
+      });
+    }
+  }]);
+
+  return IdentityManager;
+}();
+
+exports.default = IdentityManager;
+
+},{"./utils":7}],7:[function(require,module,exports){
 (function (process){
 'use strict';
 

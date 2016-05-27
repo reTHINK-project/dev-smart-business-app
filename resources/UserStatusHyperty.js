@@ -24,6 +24,7 @@
 // Service Framework
 import HypertyDiscovery from 'service-framework/dist/HypertyDiscovery';
 import {Syncher} from 'service-framework/dist/Syncher';
+import IdentityManager from './utils/IdentityManager.js';
 
 // Utils
 import EventEmitter from './utils/EventEmitter.js';
@@ -54,6 +55,8 @@ class UserStatus extends EventEmitter {
 
     this._hypertyDiscovery = new HypertyDiscovery(hypertyURL, bus);
 
+    this._identityManager = new IdentityManager(hypertyURL, configuration.runtimeURL, bus);
+
     this._objectDescURL = 'hyperty-catalogue://' + domain + '/.well-known/dataschemas/UserStatusDataSchema';
 
     this._hypertyURL = hypertyURL;
@@ -83,15 +86,15 @@ class UserStatus extends EventEmitter {
         status: statusObjectObserver.data.status
       });
 
-      this._managePresenceHeartbeat(event.identity, statusObjectObserver.data.status);
+      this._managePresenceHeartbeat(event.identity);
 
       statusObjectObserver.onChange('*', () => {
-        console.info('message received:', event);
+        console.info('status event received:', event);
         this.trigger('statusChange', {
           identity: event.identity,
           status: statusObjectObserver.data.status
         });
-        this._managePresenceHeartbeat(event.identity, statusObjectObserver.data.status);
+        this._managePresenceHeartbeat(event.identity);
       });
 
       console.log(event.identity.email, 'has subscribe to my status data object, send invite to listen mine');
@@ -126,7 +129,7 @@ class UserStatus extends EventEmitter {
         });
         setInterval(() => {
           this._sendHeartbeat();
-        }, 10000);
+        }, 50000);
       }).catch(function(reason) {
         reject(reason);
       });
@@ -168,20 +171,23 @@ class UserStatus extends EventEmitter {
     this._statusObjectReporter.data.date = (new Date()).getTime();
   }
 
-  _managePresenceHeartbeat(identity, state) {
-    console.log('_managePresenceHeartbeat for', identity);
-    if (state !== 'disconnected') {
-      if (identity in this._heartbeat) {
-        clearTimeout(this._heartbeat[identity]);
-      }
-      this._heartbeat[identity] = setTimeout(() => {
-        console.log(identity, 'has disconnect');
-        this.trigger('statusChange', {
-          identity: identity,
-          status: 'disconnected'
-        });
-      }, 20000);
+  /**
+   * Monitor user activity within heartbeat timeout period
+   */
+  _managePresenceHeartbeat(identity) {
+    console.log('renew heartbeat period for', identity);
+    let email = identity.email;
+    if (email in this._heartbeat) {
+      clearTimeout(this._heartbeat[email]);
     }
+    this._heartbeat[email] = setTimeout(() => {
+      console.log(email, 'has disconnect');
+      clearTimeout(this._heartbeat[email]);
+      this.trigger('statusChange', {
+        identity: identity,
+        status: 'disconnected'
+      });
+    }, 60000);
   }
 
   _mappingUser(userList) {
