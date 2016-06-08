@@ -7,7 +7,8 @@
         "$": true,
         "console": true,
         "rethink": true,
-        "Handlebars": true
+        "Handlebars": true,
+        "moment": true
     },
     "browser": true
 }

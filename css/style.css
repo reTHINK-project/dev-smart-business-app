@@ -53,6 +53,17 @@ main {
     clear: both;
 }
 
-.disable form.message-form {
+.disable form.message-form,
+.disable .startChat,
+.disable .startCall {
     display: none;
+}
+
+#account-example > li {
+    cursor: pointer;
+}
+
+.time-relative {
+    font-size: 0.7em;
+    color: rgb(121, 121, 121);
 }

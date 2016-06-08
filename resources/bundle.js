@@ -2774,13 +2774,12 @@ var UserStatus = function (_EventEmitter) {
     value: function _onNotification(event) {
       var _this2 = this;
 
-      console.info('Event Received: ', event);
-
-      this.trigger('invitation', event.identity);
+      console.info('UserStatus Event Received: ', event);
 
       event.ack();
 
-      // Subscribe Hello World Object
+      // if (event.schema === this._objectDescURL) {
+      // Subscribe to user status presence
       this._syncher.subscribe(this._objectDescURL, event.url).then(function (statusObjectObserver) {
         console.info('-------- Status Observer received ---------', statusObjectObserver);
 
@@ -2805,6 +2804,7 @@ var UserStatus = function (_EventEmitter) {
       }).catch(function (reason) {
         console.error(reason);
       });
+      // }
     }
 
     /**
