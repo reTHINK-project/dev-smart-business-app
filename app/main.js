@@ -81,19 +81,6 @@ function startRethink() {
 function init() {
   console.log('############################### start smart business app');
 
-  // bind statusChange event for presence update
-  userStatusHyperty.instance.addEventListener('statusChange', (event) => {
-    console.log('############################### handle statusChange event for', event);
-    let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.email : 'none';
-    $('#user-list').children('[rel="' + email + '"]').removeClass('state-disconnected state-connected state-busy').addClass('state-' + event.status);
-    let items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
-    if (event.status === 'disconnected') {
-      items.addClass('disable');
-    } else {
-      items.removeClass('disable');
-    }
-  });
-
   // bind chat creation
   chatHyperty.instance.onInvite(function(chatGroup) {
     console.log('############################### detect invite for chat', chatGroup);
@@ -151,7 +138,7 @@ function init() {
   });
 
   // user directory click
-  $('#user-list').on('click', 'a:not(.state-disconnected)', function(e) {
+  $('#user-list').on('click', 'a:not(.state-unavailable,.state-away)', function(e) {
     e.preventDefault();
     let email = $(this).attr('rel');
     console.log('############################### seach user info for', email);
@@ -184,6 +171,19 @@ function init() {
     }).catch(function(reason) {
       console.error('###############################', reason);
     });
+  });
+
+  // bind statusChange event for presence update
+  userStatusHyperty.instance.addEventListener('statusChange', (event) => {
+    console.log('############################### handle statusChange event for', event);
+    let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.email : 'none';
+    $('#user-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+    let items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
+    if (event.status === 'unavailable' || event.status === 'away') {
+      items.addClass('disable');
+    } else {
+      items.removeClass('disable');
+    }
   });
 }
 

@@ -1,24 +1,29 @@
 @charset "UTF-8";
+
 body {
     display: flex;
     min-height: 100vh;
     flex-direction: column;
 }
+
 main {
     flex: 1 1 auto;
 }
-.state-disconnected {
+
+.state-unavailable,
+.state-away {
     border-left: 12px solid rgba(0, 0, 0, 0.1);
+    cursor: default;
 }
-.state-connected {
+
+.state-available {
     border-left: 12px solid rgba(77, 182, 148, 0.6);
 }
+
 .state-busy {
     border-left: 12px solid rgba(255, 0, 0, 0.6);
 }
-.state-disconnected {
-    cursor: default;
-}
+
 .notification-list {
     margin: 0;
 }
