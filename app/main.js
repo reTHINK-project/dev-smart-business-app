@@ -5,8 +5,7 @@ let connectorHyperty = null;
 
 let userDirectory = [
     ['openidtest10@gmail.com', 'Test Open ID 10', 'localhost'],
-    ['openidtest20@gmail.com', 'Test Open ID 20', 'localhost'],
-    ['openid1.apizee@gmail.com', 'Test Apizee', 'localhost']
+    ['openidtest20@gmail.com', 'Test Open ID 20', 'localhost']
 ];
 
 let defaultAvatar = 'img/photo.jpg';
