@@ -1,10 +1,7 @@
-
+let domain = 'localhost';
 let userStatusHyperty = null;
 let chatHyperty = null;
 let connectorHyperty = null;
-let config = require('../config.json');
-let rethink = require('./factories/rethink');
-let domain = config.domain;
 
 let userDirectory = [
     ['openidtest10@gmail.com', 'Test Open ID 10', 'localhost'],
@@ -13,8 +10,7 @@ let userDirectory = [
 
 let defaultAvatar = 'img/photo.jpg';
 
-// const hypertyURI = (domain, hyperty) => `hyperty-catalogue://${domain}/.well-known/hyperty/${hyperty}`;
-const hypertyURI = (domain, hyperty) => `hyperty-catalogue://catalogue.${domain}/.well-known/hyperty/${hyperty}`;
+const hypertyURI = (domain, hyperty) => `hyperty-catalogue://${domain}/.well-known/hyperty/${hyperty}`;
 
 /****************************************** login form ******************************************/
 function logout() {
@@ -58,29 +54,25 @@ $(function() {
 function startRethink() {
   console.log('############################### loading runtime');
   rethink.default.install({
-    domain: config.domain,//or domain
-    runtimeURL:config.runtimeURL,
+    domain: domain,
     development: true
-  }).then(function(runtime) {
+  }).then((runtime) => {
     console.log('############################### runtime', runtime);
-    console.log('############################### Trying loading hyperty', hypertyURI(domain, 'UserStatus'));
+    console.log('############################### loading hyperty', hypertyURI(domain, 'UserStatus'));
     runtime.requireHyperty(hypertyURI(domain, 'UserStatus')).then((hyperty) => {
       userStatusHyperty = hyperty;
-        console.log('############################### OKKK', userStatusHyperty);
-      //   console.log('############################### loading hyperty', hypertyURI(domain, 'GroupChat'));
-      //   return runtime.requireHyperty(hypertyURI(domain, 'GroupChat')).then((hyperty) => {
-      //     chatHyperty = hyperty;
-      //     console.log('###############################', chatHyperty);
-      //     console.log('############################### loading hyperty', hypertyURI(domain, 'HypertyConnector'));
-      //     return runtime.requireHyperty(hypertyURI(domain, 'HypertyConnector')).then((hyperty) => {
-      //       connectorHyperty = hyperty;
-      //       console.log('###############################', connectorHyperty);
-      //       init();
-      //     });
-      //   });
-      // });
-    }).catch((reason) => {
-        console.error(reason);
+      console.log('###############################', userStatusHyperty);
+      console.log('############################### loading hyperty', hypertyURI(domain, 'GroupChat'));
+      return runtime.requireHyperty(hypertyURI(domain, 'GroupChat')).then((hyperty) => {
+        chatHyperty = hyperty;
+        console.log('###############################', chatHyperty);
+        console.log('############################### loading hyperty', hypertyURI(domain, 'HypertyConnector'));
+        return runtime.requireHyperty(hypertyURI(domain, 'HypertyConnector')).then((hyperty) => {
+          connectorHyperty = hyperty;
+          console.log('###############################', connectorHyperty);
+          init();
+        });
+      });
     });
   });
 }
