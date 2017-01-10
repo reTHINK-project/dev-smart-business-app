@@ -1,7 +1,10 @@
-let domain = 'localhost';
+
 let userStatusHyperty = null;
 let chatHyperty = null;
 let connectorHyperty = null;
+let config = require('../config.json');
+let rethink = require('./factories/rethink');
+let domain = config.domain;
 
 let userDirectory = [
     ['openidtest10@gmail.com', 'Test Open ID 10', 'localhost'],
@@ -10,7 +13,8 @@ let userDirectory = [
 
 let defaultAvatar = 'img/photo.jpg';
 
-const hypertyURI = (domain, hyperty) => `hyperty-catalogue://${domain}/.well-known/hyperty/${hyperty}`;
+// const hypertyURI = (domain, hyperty) => `hyperty-catalogue://${domain}/.well-known/hyperty/${hyperty}`;
+const hypertyURI = (domain, hyperty) => `hyperty-catalogue://catalogue.${domain}/.well-known/hyperty/${hyperty}`;
 
 /****************************************** login form ******************************************/
 function logout() {
@@ -54,27 +58,30 @@ $(function() {
 function startRethink() {
   console.log('############################### loading runtime');
   rethink.default.install({
-    domain: domain,
+    domain: config.domain,//or domain
+    runtimeURL:config.runtimeURL,
     development: true
-  }).then((runtime) => {
+  }).then(function(runtime) {
     console.log('############################### runtime', runtime);
-    console.log('############################### loading hyperty', hypertyURI(domain, 'UserStatus'));
+    console.log('############################### Trying loading hyperty', hypertyURI(domain, 'UserStatus'));
     runtime.requireHyperty(hypertyURI(domain, 'UserStatus')).then((hyperty) => {
       userStatusHyperty = hyperty;
-      console.log('###############################', userStatusHyperty);
-      console.log('############################### loading hyperty', hypertyURI(domain, 'GroupChat'));
-      return runtime.requireHyperty(hypertyURI(domain, 'GroupChat')).then((hyperty) => {
-        chatHyperty = hyperty;
-        console.log('###############################', chatHyperty);
-        console.log('############################### loading hyperty', hypertyURI(domain, 'HypertyConnector'));
-        return runtime.requireHyperty(hypertyURI(domain, 'HypertyConnector')).then((hyperty) => {
-          connectorHyperty = hyperty;
-          console.log('###############################', connectorHyperty);
-          init();
+        console.log('############################### OKKK', userStatusHyperty);
+        console.log('############################### loading hyperty', hypertyURI(domain, 'GroupChat'));
+        return runtime.requireHyperty(hypertyURI(domain, 'GroupChat')).then((hyperty) => {
+          chatHyperty = hyperty;
+          console.log('###############################', chatHyperty);
+          console.log('############################### loading hyperty', hypertyURI(domain, 'Connector'));
+          return runtime.requireHyperty(hypertyURI(domain, 'Connector')).then((hyperty) => {
+            connectorHyperty = hyperty.instance;
+            console.log('###############################', connectorHyperty);
+            init();
+          });
         });
       });
+    }).catch((reason) => {
+        console.error(reason);
     });
-  });
 }
 
 function init() {
@@ -97,13 +104,17 @@ function init() {
   });
 
   if (connectorHyperty !== null) {
-    connectorHyperty.instance.addEventListener('connector:connected', function(controller) {
-      console.log('############################### connector:connected', controller);
-      connectorHyperty.instance.addEventListener('have:notification', function(event) {
-        console.log('############################### have:notification', event);
-        notificationHandler(controller, event);
-      });
-    });
+        connectorHyperty.onInvitation(function (controller, identity) {
+        console.log('On Invitation: ', controller, identity);
+        notificationHandler(controller, identity);
+      })
+    // connectorHyperty.onInvitation('connector:connected', function(controller) {
+    //   console.log('############################### connector:connected', controller);
+    //   connectorHyperty.onInvitation('have:notification', function(event) {
+    //     console.log('############################### have:notification', event);
+    //     notificationHandler(controller, event);
+    //   });
+    // });
   }
 
   // start chat
@@ -164,9 +175,9 @@ function init() {
         participants.push({email: v[0], domain: v[2]});
       }
     });
-    console.log('############################### invite for user presence ok', participants);
+    console.debug('############################### invite for user presence participants:', participants);
     userStatusHyperty.instance.create(participants).then(function(res) {
-      console.log('############################### invite for user presence ok', res);
+      console.debug('############################### invite for user presence ok', res);
     }).catch(function(reason) {
       console.error('###############################', reason);
     });

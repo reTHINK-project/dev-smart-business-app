@@ -1,3 +1,43 @@
+<!-- views/profile.ejs -->
+<!--<!doctype html>
+<html>
+<head>
+    <title>Node Authentication</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+    <style>
+        body        { padding-top:80px; word-wrap:break-word; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="page-header text-center">
+        <h1><span class="fa fa-anchor"></span> Profile Page</h1>
+        <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+    </div>
+
+    <div class="row">
+
+        <! LOCAL INFORMATION -->
+        <!--<div class="col-sm-6">
+            <div class="well">
+                <h3><span class="fa fa-user"></span> Local</h3>
+
+                    <p>
+                        <strong>id</strong>: <%= user._id %><br>
+                        <strong>email</strong>: <%= user.local.email %><br>
+                        <strong>password</strong>: <%= user.local.password %>
+                    </p>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>-->
 <!DOCTYPE html>
 <html>
 
@@ -102,7 +142,7 @@
                                     </u>
                                 </span>
                             </p>
-                            <div align="left" id="left-div" style="overflow: hidden; width: 626px;height: 500px; border: 2px solid maroon">
+                            <div align="left" id="left-div" style="overflow: hidden; width: 626px;height: 342px; border: 2px solid maroon">
                                    <table id='table1' class="table table-bordered">
                                         <thead>
                                             <tr>
@@ -112,9 +152,8 @@
                                             <th>Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody>      
+                                        <tbody>
                                         </tbody>
-                                       
                                         <tfoot>
                                             <tr>
                                             <td>
@@ -128,8 +167,7 @@
                                             </td>
                                             <td>
                                                 <div class="text-center">
-                                                <button id='add' class="btn-floating btn-large waves-effect waves-light red"><i class="material-icons">add</i>
-                                                <!--<button id='add' class='btn btn-block' />Add</button>-->
+                                                <button id='add' class='btn btn-block' />Add</button>
                                                 </div>
                                             </td>
                                             </tr>
@@ -146,7 +184,7 @@
                                     </u>
                                 </span>
                             </p>
-                            <div align="left" id="left-div" style="overflow: hidden; width: 626px;height: 500px; border: 2px solid maroon">
+                            <div align="left" id="left-div" style="overflow: hidden; width: 626px;height: 342px; border: 2px solid maroon">
                             </div>
                     </div>
             </div>
@@ -178,13 +216,14 @@
                 }
         </style>
     </section>
-    <script src="js/vendor/jquery.min.js"></script>
-    <script src="js/vendor/materialize.min.js"></script>
-    <script src="js/vendor/handlebars.min.js"></script>
-    <script src="js/vendor/moment.min.js"></script>
-     <script src="index.js"></script>
-    <!--<script src="./dist/factories/rethink.js"></script>-->
-    <script src="./js/main.js"></script>
+    <script src="../js/vendor/jquery.min.js"></script>
+    <script src="../js/vendor/materialize.min.js"></script>
+    <script src="../js/vendor/handlebars.min.js"></script>
+    <script src="../js/vendor/moment.min.js"></script>
+       <!--<script src="index.js"></script>-->
+    <script src="./dist/factories/rethink.js"></script>
+    <script src="./dist/main.js"></script>
 </body>
 
 </html>
+

@@ -1,0 +1,5 @@
+{
+  "development": true,
+  "runtimeURL": "hyperty-catalogue://catalogue.localhost/.well-known/runtime/Runtime",
+  "domain": "localhost"
+}

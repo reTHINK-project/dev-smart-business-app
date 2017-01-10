@@ -2755,7 +2755,7 @@ var UserStatus = function (_EventEmitter) {
 
     _this._identityManager = new _IdentityManager2.default(hypertyURL, configuration.runtimeURL, bus);
 
-    _this._objectDescURL = 'hyperty-catalogue://' + domain + '/.well-known/dataschemas/UserStatusDataSchema';
+    _this._objectDescURL = 'hyperty-catalogue://' + domain + '/.well-known/dataschema/UserStatusDataSchema';
 
     _this._hypertyURL = hypertyURL;
     _this._domain = domain;
@@ -2826,6 +2826,7 @@ var UserStatus = function (_EventEmitter) {
 
         console.info('----------------------- Mapping Particpants --------------------');
         _this3._mappingUser(participants).then(function (hyperties) {
+          console.debug('After mapping here are hypeties: ', hyperties);
           return _this3.createSyncher(hyperties, status);
         }).then(function (statusObjectReporter) {
           _this3._statusObjectReporter = statusObjectReporter;
@@ -2938,7 +2939,7 @@ var UserStatus = function (_EventEmitter) {
         userList.forEach(function (user) {
           console.log(user);
           if (user.email.length) {
-            console.info('------------------------ _mappingUser ----------------------', userList);
+            console.info('------------------------  userList.forEach( _mappingUser ----------------------', userList);
             return _this6._hypertyDiscovery.discoverHypertyPerUser(user.email, user.domain).then(activeUsers).catch(inactiveUsers);
           }
         });
