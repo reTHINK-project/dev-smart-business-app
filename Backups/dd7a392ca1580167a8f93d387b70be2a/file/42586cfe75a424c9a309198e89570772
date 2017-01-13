@@ -1,0 +1,130 @@
+file:///home/jamal/Desktop/jamal-dev/testbeds/nodes/PT-node/production/docker-compose.yml
+version: '2'
+services:
+  'msg-node-rethink':
+    image: 'msg-node-rethink:latest'
+    volumes:
+          - /home/jamal/Desktop/jamal-dev/dev-msg-node-nodejs/:/usr/src/app
+    container_name: 'msg-node-rethink'
+    environment:
+      - MNdomain=localhost
+      - port=9090
+      - domainRegistryUrl=http://citysdk.tecnico.ulisboa.pt:4568/
+      - globalRegistryUrl=http://130.149.22.133:5002/
+      - redisUrl=http://172.18.0.5:6379/ # redisUrl:address where redis server(Persistence) would be deployed localhost could be redisUrl=http://172.18.0.5:6379/
+      - logLevel=INFO
+      - redisUrl=localhost # redisUrl:address where redis server(Persistence) would be deployed localhost could be redisUrl=http://172.18.0.5:6379/
+      # - logDir=/usr/src/app/logs
+      # - useSSL=1
+      # - sslCertificate=/usr/src/app/src/ssl/myCert.crt
+      # - sslPKey=/usr/src/app/src/ssl/myCert.key
+    networks:
+      rethink:
+        ipv4_address: 172.18.0.2
+    expose:
+      - '443'
+      - '9090'
+
+
+  # 'msg-node-vertx':
+  #   image: 'rethink/msg-node-vertx'
+  #   container_name: 'msg-node-vertx'
+  #   environment:
+  #     - MSG_NODE_CONFIG=env
+  #     - NODE_DOMAIN=rethink.apizee.com
+  #     - NODE_PORT=9090
+  #     - NODE_REGISTRY_URL=http://172.18.0.4:4567
+  #     - NODE_GLOBAL_REGISTRY_URL=http://130.149.22.133:5002
+  #   networks:
+  #     rethink:
+  #       ipv4_address: 172.18.0.2
+  #   expose:
+  #     - '443'
+  # #     - '9090'
+  #
+  #
+  'redis':
+    image: 'redis:3.2.6'
+    container_name: 'redis'
+    networks:
+      rethink:
+        ipv4_address: 172.18.0.5
+    hostname: 'redis.rethink.apizee.com'
+    expose:
+      - '6379'
+    depends_on:
+      - 'msg-node-rethink'
+
+
+  # 'domain-registry':
+  #   image: rethink/registry-domain-server
+  #   container_name: 'domain-registry'
+  #   networks:
+  #     rethink:
+  #       ipv4_address: 172.18.0.4
+  #   hostname: 'registry.rethink.apizee.com'
+  #   environment:
+  #     - STORAGE_TYPE=RAM
+  #     - EXPIRES=3600
+  #   ports:
+  #     - '4568'
+  #     - '4567'
+
+  # 'catalogue-broker':
+  #   image: rethink/catalogue-broker
+  #   container_name: 'catalogue-broker'
+  #   networks:
+  #     rethink:
+  #       ipv4_address: 172.18.0.8
+  #   hostname: 'catalogue.localhost'
+  #   command: [-host, 'catalogue.localhost', -default, protocolstub/NodejsProtoStub]
+  #   expose:
+  #     - '443'
+  #     - '5683'
+  #
+  # 'catalogue-database-local':
+  #   build: "./catalogue-database"
+  #   container_name: 'catalogue-database-local'
+  #   network_mode: "service:catalogue-broker"
+  #   command: [-host, catalogue.localhost]
+  #   depends_on:
+  #     - 'catalogue-broker'
+  # #
+  # #
+  'hyperty-toolkit-test':
+    build: '/home/jamal/Desktop/jamal-dev/dev-hyperty-toolkit'
+    container_name: 'hyperty-toolkit-test'
+    command: npm run start:all
+    environment:
+      - DEVELOPMENT=true
+      - RUNTIME_URL=hyperty-catalogue://catalogue.localhost/.well-known/runtime/Runtime
+      - DOMAIN=localhost
+      - HYPERTY_REPO=/tmp/dev-hyperty
+    volumes:
+      - ~/Desktop/jamal-dev/dev-hyperty:/tmp/dev-hyperty
+    networks:
+      rethink:
+        ipv4_address: 172.18.0.32
+    expose:
+      - '9080'
+  # # #
+  # 'proxy':
+  #   image: rethink-nginx:latest
+    # ports:
+    #   - "81:80"
+    #   - "443:443"
+    # depends_on:
+    #   - hyperty-toolkit
+    #   - catalogue-database-ptinovacao
+    #   - catalogue-broker
+    #   - rethink-msg-nodejs
+    #   - domain-registry
+
+networks:
+  rethink:
+    driver: bridge
+    ipam:
+      # driver: default
+      config:
+        - subnet: 172.18.0.0/16
+          gateway: 172.18.0.1
