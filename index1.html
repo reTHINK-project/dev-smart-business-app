@@ -29,18 +29,16 @@
                 <h4>About this demo</h4>
                 <p>This application provide some communication tools using the rethink framework...
                     <br />(for demonstration purpose only)</p>
-                <p>Demo account :</p>
+                <!--<p>Demo account :</p>-->
                 <ul id="account-example">
-                    <li><span class="account-mail">openidtest10@gmail.com</span> / <span class="account-pwd">testOpenID10</span></li>
-                    <li><span class="account-mail">openidtest20@gmail.com</span> / <span class="account-pwd">testOpenID20</span></li>
-                    <li><span class="account-mail">jtestapizee@gmail.com</span> / <span class="account-pwd">blabla</span></li>
+                    
                     <li><span class="account-mail">anajb006@gmail.com</span> / <span class="account-pwd">blablo</span></li>
                 </ul>
             </div>
-            <div class="col m6">
-                <h4 class="center-align">Login</h4>
+                <div class="col m6">
+                <h4 class="center-align"> Guest Login</h4>
                 <div class="row">
-                    <form id="login" class="col s12">
+                    <form id="contactUS" class="col s12">
                         <div class="row">
                             <div class="input-field col s12">
                                 <input id="email" name="email" type="email" class="validate" required>
@@ -54,23 +52,41 @@
                             </div>
                         </div>
                         <div class="divider"></div>
-                        <div class="row">
+                           <div class="col m6">
+                               <div class="row">
+                                   <form id="contactUS" class="col s12">
+                                       <div class="row">
+                                           <p class="right-align">
+                                               <button class="btn btn-large waves-effect waves-light" type="submit" name="action">contactUS</button>
+                                            </p>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </form>
+                </div>
+            </div>
+            <!--<div class="col m6">
+                <h4 class="center-align">Visitor</h4>
+                <div class="row">
+                    <form id="contactUS" class="col s12">
+                         <div class="row">
                             <div class="col m12">
                                 <p class="right-align">
-                                    <button class="btn btn-large waves-effect waves-light" type="submit" name="action">Login</button>
+                                    <button class="btn btn-large waves-effect waves-light" type="submit" name="action">contactUS</button>
                                 </p>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div>
+            </div>-->
         </div>
     </section>
 
 
     <section id="app" class="hide page-flexbox-wrapper">
         <header class="navbar-fixed">
-            <ul id="user-status-toggler" class="dropdown-content">
+            <ul id="visitor-status-toggler" class="dropdown-content">
                 <li><a href="#!" class="state-available" rel="available">Available</a></li>
                 <li><a href="#!" class="state-busy" rel="busy">Busy</a></li>
                 <li><a href="#!" class="state-away" rel="away">Away</a></li>
@@ -80,8 +96,9 @@
                     <a href="#" class="brand-logo left">Smart Business App</a>
                     <ul class="right">
                         <li>
-                            <a href="#account" class="dropdown-button" data-activates="user-status-toggler">
+                            <a href="#account" class="dropdown-button" data-activates="visitor-status-toggler">
                                 <span id="currentUser">Current User</span>
+                                Guest
                                 <i class="material-icons right">arrow_drop_down</i>
                             </a>
                         </li>
@@ -96,16 +113,14 @@
                 <div class="col s12 m4 l3">
                     <div class="row">
                         <ul class="collection">
-
-                                <h6 class="center-align">Contacts</h6>
-                                <div id="user-list" class="user-list collection"></div>
-
+                            <h6 class="center-align">Online Agents</h6>
+                            <div id="agents-list" class="agents-list collection"></div>
                         </ul>
                     </div>
-                    <div class="row">
+                    <!--<div class="row">
                         <h6 class="center-align">Visitors</h6>
                         <div id="visitor-list" class="visitor-list collection"></div>
-                    </div>
+                    </div>-->
                 </div>
                 <div class="col s12 m8 l9">
                     <div id="main" class="row">

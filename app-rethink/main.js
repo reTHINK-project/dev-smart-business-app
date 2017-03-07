@@ -6,14 +6,19 @@ let groupChatHyperty = null;
 let stHyperty;
 let loading = false;
 let chHyperty;
+let userName;
+let userURL;
+let avatar = {};
+let callHyperty;
 let RTCHyperty;
 let DiscChat= [];
 let statusHyperty = [];
-let WebRTCHyperty = [];;
+let WebRTCHyperty = [];
 let connectorHyperty = null;
 let config = require('../config.json');
 let rethink = require('./factories/rethink');
 let domain = config.domain;
+let btnCall;
  
 
 
@@ -21,8 +26,11 @@ let userDirectory = [
     ['openidtest10@gmail.com', 'TestOpenID 10', 'localhost'],
     ['jtestapizee@gmail.com', 'TestApizee', 'localhost'],
     ['openidtest20@gmail.com', 'TestOpenID 20', 'localhost'],
-    ['anajb006@gmail.com', 'PersoanlGmail', 'localhost']
+    // ['anajb006@gmail.com', 'PersoanlGmail', 'localhost']
+];
 
+let visitorDirectory =  [
+    ['anajb006@gmail.com', 'PersoanlGmail', 'localhost']
 ];
 
 let defaultAvatar = 'img/photo.jpg';
@@ -62,6 +70,17 @@ $(function() {
       console.log('############################### form is not valid...');
     }
   });
+  // visitor mode
+  $('#contactUS').on('submit', function(e) {
+    e.preventDefault();
+    console.log('############################### authenticate through service with...', $('#email').val());
+    if ($('#email,#pass')[0].checkValidity()) {
+      localStorage.setItem('username', $('#email').val());
+      startApp();
+    } else {
+      console.log('############################### form is not valid...');
+    }
+  });
 
   $('#logout').on('click', function(e) {
     e.preventDefault();
@@ -82,15 +101,17 @@ function startRethink() {
     runtime.requireHyperty(hypertyURI(domain, 'UserStatus')).then((hyperty) => {
       userStatusHyperty = hyperty.instance;
         console.log('############################### OKKK', userStatusHyperty);
-        console.log('############################### loading hyperty', hypertyURI(domain, 'GroupChat'));
-        return runtime.requireHyperty(hypertyURI(domain, 'GroupChatManager')).then((hyperty) => {
-          groupChatHyperty = hyperty.instance;
-          getMyHypertyInfo(hyperty);
-          console.log('############################### OKKK', groupChatHyperty);
-          console.log('############################### loading hyperty', hypertyURI(domain, 'Connector'));
-          return runtime.requireHyperty(hypertyURI(domain, 'Connector')).then((hyperty) => {
-            connectorHyperty = hyperty.instance;
-            console.log('############################### OKKK', connectorHyperty);
+
+        console.log('############################### loading hyperty', hypertyURI(domain, 'Connector'));
+        return runtime.requireHyperty(hypertyURI(domain, 'Connector')).then((hyperty) => {
+          callHyperty = hyperty;           
+          console.log('############################### OKKK :', callHyperty);
+
+          console.log('############################### loading hyperty', hypertyURI(domain, 'GroupChat'));
+          return runtime.requireHyperty(hypertyURI(domain, 'GroupChatManager')).then((hyperty) => {
+            groupChatHyperty = hyperty.instance;
+            console.log('############################### OKKK', groupChatHyperty);
+            getMyHypertyInfo(hyperty);
             init();
           });
         });
@@ -109,12 +130,21 @@ function init() {
     onInvitation(event);
   });
 
+     userStatusHyperty.onInvitation((event) => {
+      console.debug('############################### detect userStatusHyperty for event', event);
+      onStatusInvitation(event);
+    });
 
-  if (connectorHyperty !== null) {
-        connectorHyperty.onInvitation(function (controller, identity) {
-        console.log('On Invitation: ', controller, identity);
-        notificationHandler(controller, identity);
+
+  if (callHyperty.instance !== null) {
+        callHyperty.instance.onInvitation(function (controller, identity) {
+        console.log('On Invitation callHyperty: ', controller, identity);
+        WebRTCnotificationHandler(controller, identity);
       });
+  } else {
+    let msg = 'If you need pass the hyperty to your template, create a function called hypertyLoaded';
+    console.info(msg);
+    notification(msg, 'warn');
   }
 
   // start chat
@@ -138,34 +168,30 @@ function init() {
   });
 
   // start call
-  $('#main').on('click', '.startCall', function() {
+  $('#main').on('click', '.startCall', function(event) {
     let email = $(this).closest('.user-detail').attr('rel');
     let userPrefix = email.split('@')[0];
-    $(this).remove();
-     console.debug('############################### start chat with', email);
-        Handlebars.getTemplate('tpl/video-section').then(function(template) {
-        let html = template();
-        $('#' + userPrefix).find('.video-section').append(html);
-        console.debug('############################### video',     $('#' + userPrefix).find('.video-section').append(html));
-      if (typeof WebRTChypertyLoaded === 'function') {
-        WebRTChypertyLoaded(connectorHyperty);
-      } else {
-        let msg = 'If you need pass the hyperty to your template, create a function called hypertyLoaded';
-        console.info(msg);
-        // notification(msg, 'warn');
-      }
-      loading = false;
-    });  
-    // userStatusHyperty._discovery.discoverHypertyPerUser(email, 'localhost').then((result) => {
-    //   let userPrefix = email.split('@')[0];
-    //   Handlebars.getTemplate('tpl/video-section').then((html) => {
-    //     console.log('############################### openVideo', result);
-    //     $('#' + userPrefix).find('.video-section').append(html);
-    //     console.debug('############################### video',     $('#' + userPrefix).find('.video-section').append(html));
-    //     console.debug('############################### result.hypertyURL', result.hypertyURL);
-    //     openVideo(result.hypertyURL);
-    //   });
-    // });
+    let $mainContent = $('.main-content').find('.row');
+    btnCall = $(this);
+    $(this).hide();
+     console.debug('############################### start call with', email);
+        // Handlebars.getTemplate('tpl/video-section').then(function(template) {
+        // let html = template();
+        // $mainContent.html(html);
+        // $('#' + userPrefix).find('.video-section').append(html);
+          event.preventDefault();
+          console.debug('event is :', event);
+          let userURLtest = $(event.currentTarget).parent().attr('data-user');
+          console.debug('userURL is : ', userURLtest)
+          let hypertyURL = $(event.currentTarget).parent().attr('data-url');
+          // let roomID = document.getElementById('roomName').value;
+          let roomID = 'Test';
+
+          // let domain = hypertyURL.substring(hypertyURL.lastIndexOf(':') + 3, hypertyURL.lastIndexOf('/'));
+          console.debug('Domain:', domain);
+          openVideo(userURL,roomID, domain);
+  
+    // });  
   });
 
   // user directory click
@@ -175,6 +201,31 @@ function init() {
     let email = $(this).attr('rel');
     console.log('############################### seach user info for', email);
     showUserDetail(email);
+  });
+    // agnets  directory click
+  $('#agents-list').on('click', '.collection-item', function(e) { 
+    e.preventDefault();
+
+    let email = $(this).attr('rel');
+    console.log('############################### seach user info for', email);
+    showUserDetail(email);
+  });
+  // visitors lists
+  $('#visitor-list').on('click', '.collection-item', function(e) { 
+    e.preventDefault();
+
+    let email = $(this).attr('rel');
+    console.log('############################### seach user info for', email);
+    showUserDetail(email);
+  });
+  // visitor status
+   // user status change
+  $('#visitor-status-toggler').find('a').on('click', function(e) {
+    e.preventDefault();
+    console.debug('this is : ', this);
+    console.debug('event is :', e);
+    console.debug('$(this).attr(rel):', $(this).attr('rel'));
+    userStatusHyperty.setStatus($(this).attr('rel'));
   });
 
   // user status change
@@ -187,9 +238,9 @@ function init() {
   });
 
   updateRelativeTime();
-  setInterval(() => {
-    updateRelativeTime();
-  }, 60000);
+  // setInterval(() => {
+  //   updateRelativeTime();
+  // }, 60000);
 
   // fetch user-card template
   Handlebars.getTemplate('tpl/user-card').then((template) => {
@@ -200,6 +251,13 @@ function init() {
         participants.push({email: v[0], domain: v[2]});
       }
     });
+    $.each(visitorDirectory, function(i, v) {
+      // if (v[0] !== localStorage.username) {
+        console.debug('v[0]:', v)
+        $('#visitor-list').append(template({email: v[0], username: v[1]}));
+        participants.push({email: v[0], domain: v[2]});
+      // }
+    });
     console.debug('############################### invite for user presence participants:', participants);
     userStatusHyperty.create(participants).then(function(res) {
       console.debug('############################### invite for user presence ok', res);
@@ -208,11 +266,77 @@ function init() {
     });
   });
 
+   // fetch agents-card template
+  Handlebars.getTemplate('tpl/user-card').then((template) => {
+    let participants = [];
+    $.each(userDirectory, function(i, v) {
+      if (v[0] !== localStorage.username) {
+        $('#agents-list').append(template({email: v[0], username: v[1]}));
+        participants.push({email: v[0], domain: v[2]});
+      }
+    });
+    console.debug('############################### invite for user presence participants:', participants);
+    userStatusHyperty.create(participants).then(function(res) {
+      console.debug('############################### invite for user presence ok', res);
+    }).catch(function(reason) {
+      console.error('###############################', reason);
+    });
+  });
   // bind statusChange event for presence update
   userStatusHyperty.addEventListener('statusChange', (event) => {
     console.log('############################### handle statusChange event for', event);
-    let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.email : 'none';
-    $('#user-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+    let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.userProfile.username : 'none';
+  
+    $('#visitor-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+    let messagesList =   $('#visitor-list').find('[rel="' + email + '"]');
+
+    let from = '';
+
+    avatar[event.identity.userProfile.username] = event.identity.userProfile.avatar;
+   
+
+  // let list = `<li class="collection-item avatar">
+  //   <img src="` + avatar + `" alt="" class="circle"></li>`;
+  // messagesList.append(list);
+    // $('#user-list').addClass(event.identity.userProfile.avatar);
+    let items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
+    if (event.status === 'unavailable' || event.status === 'away') {
+      items.addClass('disable');
+    } else {
+      items.removeClass('disable');
+    }
+  });
+   // bind statusChange event for presence update
+  userStatusHyperty.addEventListener('statusChange', (event) => {
+    console.log('############################### handle statusChange event for', event);
+    let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.userProfile.username : 'none';
+  
+    $('#agents-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+    let messagesList =   $('#agents-list').find('[rel="' + email + '"]');
+
+    let from = '';
+
+    avatar[event.identity.userProfile.username] = event.identity.userProfile.avatar;
+    let items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
+    if (event.status === 'unavailable' || event.status === 'away') {
+      items.addClass('disable');
+    } else {
+      items.removeClass('disable');
+    }
+  });
+
+  // bind statusChange event for presence update
+  userStatusHyperty.addEventListener('statusChange', (event) => {
+    console.log('############################### handle statusChange event for', event);
+    let email = (typeof event !== 'undefined' && typeof event.identity !== 'undefined') ? event.identity.userProfile.username : 'none';
+  
+    $('#visitor-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+    let messagesList =   $('#visitor-list').find('[rel="' + email + '"]');
+
+    let from = '';
+
+    avatar[event.identity.userProfile.username] = event.identity.userProfile.avatar;
+   
     let items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
     if (event.status === 'unavailable' || event.status === 'away') {
       items.addClass('disable');
@@ -222,32 +346,24 @@ function init() {
   });
 }
 
+
+
 /*************************************************** reTHINK WebRTC Call **********************************************************/
-function WebRTChypertyLoaded(result) {
-
-  // Prepare to discover email:
-  var search = result.search;
-  discoverEmail(search);
-
-  search.myIdentity().then(function(identity) {
-    WebRTChypertyReady(result, identity);
-  });
-}
-
-function WebRTChypertyReady(result, identity) {
-  connectorHyperty.onInvitation(function(controller, identity) {
-    console.log('On Invitation: ', controller, identity);
-    WebRTCnotificationHandler(controller, identity);
-  });
-}
 
 function WebRTCnotificationHandler(controller, identity) {
+  // Handlebars.getTemplate('tpl/video-section').then(function(template) {
+  //       let html = template();
+  //       $mainContent.html(html);
+  //       $('#' + userPrefix).find('.video-section').append(html);
+  //         event.preventDefault();
+  //       }); 
 
   var calleeInfo = identity;
   var incoming = $('.modal-call');
   var acceptBtn = incoming.find('.btn-accept');
   var rejectBtn = incoming.find('.btn-reject');
   var informationHolder = incoming.find('.information');
+  console.debug('informationHolder is :', informationHolder)
 
   showVideo(controller);
 
@@ -256,13 +372,12 @@ function WebRTCnotificationHandler(controller, identity) {
     console.log('accepted call from', calleeInfo);
 
     e.preventDefault();
-
     var options = options || {video: true, audio: true};
     getUserMedia(options).then(function(mediaStream) {
+      console.debug('--------------------- getUserMedia 259------------------------------');
       processLocalVideo(mediaStream);
       return controller.accept(mediaStream);
-    })
-    .then(function(result) {
+    }).then(function(result) {
       console.log(result);
     }).catch(function(reason) {
       console.error(reason);
@@ -311,97 +426,9 @@ function WebRTCnotificationHandler(controller, identity) {
 
 }
 
-function discoverEmail(search) {
 
-  var section = $('.discover');
-  var searchForm = section.find('.form');
-  var inputField = searchForm.find('.friend-email');
-  var inputDomain = searchForm.find('.input-domain');
 
-  section.removeClass('hide');
 
-  searchForm.on('submit', function(event) {
-    event.preventDefault();
-
-    var collection = section.find('.collection');
-    var collectionItem = '<li class="collection-item item-loader"><div class="preloader-wrapper small active"><div class="spinner-layer spinner-blue-only"><div class="circle-clipper left"><div class="circle"></div></div><div class="gap-patch"><div class="circle"></div></div><div class="circle-clipper right"><div class="circle"></div></div></div></div></li>';
-
-    collection.empty();
-    collection.removeClass('hide');
-    collection.addClass('center-align');
-    collection.prepend(collectionItem);
-
-    var email = inputField.val();
-    var domain = inputDomain.val();
-
-    console.log('searching for: ', email, ' at domain: ', domain);
-
-    search.users([email], [domain], ['connection'], ['audio', 'video']).then(emailDiscovered).catch(emailDiscoveredError);
-
-  });
-}
-
-function emailDiscovered(result) {
-  console.log('Email Discovered: ', result);
-
-  var section = $('.discover');
-  var collection = section.find('.collection');
-  var collectionItem;
-
-  collection.removeClass('center-align');
-  var loader = collection.find('li.item-loader');
-  loader.remove();
-
-  if (result.length === 0) {
-    collectionItem = '<li class="collection-item orange lighten-3">' +
-      '<span class="title">Hyperty not found</span>' +
-      '</li>';
-
-    collection.append(collectionItem);
-  }
-
-  result.forEach((hyperty) => {
-  	console.debug('hyperty is ::', hyperty);
-
-    var itemsFound = collection.find('li[data-url="' + hyperty.userID + '"]');
-    if (itemsFound.length) {
-      itemsFound[0].remove();
-    }
-
-    if (hyperty.hasOwnProperty('userID')) {
-      collectionItem = '<li data-user="' + hyperty.userID + '" data-url="' + hyperty.hypertyID + '" class="collection-item">' +
-      '<span class="title"><b>UserURL: </b>' + hyperty.userID + '</span>' +
-      '<a title="Call to ' + hyperty.userID + '" class="waves-effect waves-light btn call-btn secondary-content"><i class="material-icons">call</i></a>' +
-      '<p><b>DescriptorURL: </b>' + hyperty.descriptor + '<br><b>HypertyURL: </b>' + hyperty.hypertyID +
-      '<br><b>Resources: </b>' + JSON.stringify(hyperty.resources) +
-      '<br><b>DataSchemes: </b>' + JSON.stringify(hyperty.dataSchemes) +
-      '</p></li>'+
-			 '<p> <input type="text" name="room" value="" id="roomName" placeholder=" Enter Room Name" required>';
-    } else {
-      collectionItem = '<li class="collection-item orange lighten-3">' +
-      '<span class="title">Hyperty not found</span>' +
-      '</li>';
-    }
-
-    collection.append(collectionItem);
-
-  });
-
-  var callBtn = collection.find('.call-btn');
-  callBtn.on('click', function(event) {
-    event.preventDefault();
-    console.debug('event is :', event);
-    let userURL = $(event.currentTarget).parent().attr('data-user');
-    let hypertyURL = $(event.currentTarget).parent().attr('data-url');
-    let roomID = document.getElementById('roomName').value;
-
-    let domain = hypertyURL.substring(hypertyURL.lastIndexOf(':') + 3, hypertyURL.lastIndexOf('/'));
-    console.debug('Domain:', domain);
-
-    openVideo(userURL,roomID, domain);
-  });
-
-}
 
 function emailDiscoveredError(result) {
 
@@ -429,7 +456,7 @@ function openVideo(hyperty,roomID, domain) {
   getUserMedia(options).then(function(mediaStream) {
     console.info('recived media stream: ', mediaStream);
     localMediaStream = mediaStream;
-    return connector.connect(toHyperty, mediaStream, roomID, domain);
+    return callHyperty.instance.connect(toHyperty, mediaStream, roomID, domain);
   })
   .then(function(controller) {
     showVideo(controller);
@@ -447,6 +474,7 @@ function processVideo(event) {
 
   var videoHolder = $('.video-holder');
   var video = videoHolder.find('.video');
+  console.debug('video[0], video : ',video[0],video )
   video[0].src = URL.createObjectURL(event.stream);
 
 }
@@ -457,6 +485,7 @@ function processLocalVideo(mediaStream) {
   var videoHolder = $('.video-holder');
   var video = videoHolder.find('.my-video');
   video[0].src = URL.createObjectURL(mediaStream);
+  console.debug('video[0], video :', video[0], video);
 }
 
 function disconnecting() {
@@ -471,6 +500,7 @@ function disconnecting() {
 }
 
 function showVideo(controller) {
+
   var videoHolder = $('.video-holder');
   videoHolder.removeClass('hide');
 
@@ -479,7 +509,8 @@ function showVideo(controller) {
   var btnMic = videoHolder.find('.mic');
   var btnHangout = videoHolder.find('.hangout');
 
-  console.log(controller);
+ 
+  console.debug(controller);
 
   controller.onAddStream(function(event) {
     processVideo(event);
@@ -561,6 +592,8 @@ function showVideo(controller) {
     controller.disconnect().then(function(status) {
       console.log('Status of Handout:', status);
       disconnecting();
+      btnCall.show();
+      
     }).catch(function(e) {
       console.error(e);
     });
@@ -568,7 +601,6 @@ function showVideo(controller) {
     console.log('hangout');
   });
 }
-
 
 
 /***********************************************************************************************************************************/
@@ -602,6 +634,7 @@ function getMyHypertyInfo(result) {
 
   let search = result.instance.search;
   console.debug('search is : ', search)
+  userName = result.name;
 
   search.myIdentity().then(function(identity) {
     console.debug('myIdentity is : ', identity)
@@ -609,8 +642,10 @@ function getMyHypertyInfo(result) {
     let hypertyInfo = '<div class="row"><span class="white-text">' +
                       '<b>Name:</b> ' + result.name + '</br>' +
                       '<b>Status:</b> ' + result.status + '</br>' +
-                      '<b>HypertyURL:</b> ' + result.runtimeHypertyURL + '</br>' +
+                       '<b>groupChatHypertyURL:</b> ' + result.runtimeHypertyURL + '</br>' +
+                      '<b>WebRTCHypertyURL:</b> ' + callHyperty.runtimeHypertyURL + '</br>' +
                       '</span></div>';
+                 
 
     let userInfo = '<div class="row"><span class="white-text">' +
                   '<span class="col s2">' +
@@ -628,9 +663,9 @@ function getMyHypertyInfo(result) {
 
 function chatHypertyReady(result,identity) {
 
-  groupChatHyperty.onInvitation((event) => {
-    onInvitation(event);
-  });
+  // groupChatHyperty.onInvitation((event) => {
+  //   onInvitation(event);
+  // });
 
 let messageChat = $('.chat');
   messageChat.removeClass('hide');
@@ -684,6 +719,27 @@ function addParticipantEvent(event) {
 
 }
 
+function onInvitation(event) {
+  console.debug('############################################ On Invitation: ', event);
+
+  groupChatHyperty.join(event.url).then(function(chatController) {
+    prepareChat(chatController);
+
+    setTimeout(() => {
+      let users = event.value.participants;
+
+      users.forEach((user) => {
+        processNewUser(user);
+      });
+
+    }, 500);
+
+  }).catch(function(reason) {
+    console.error('Error connectin to', reason);
+  });
+
+}
+
 function createRoomEvent(event) {
   event.preventDefault();
 
@@ -729,6 +785,7 @@ function joinRoom(event) {
     let resource = joinModal.find('.input-name').val();
 
     groupChatHyperty.join(resource).then(function(chatController) {
+      console.debug('done ?');
       prepareChat(chatController);
     }).catch(function(reason) {
       console.error(reason);
@@ -741,6 +798,7 @@ function joinRoom(event) {
 }
 
 function prepareChat(chatController, isOwner) {
+  console.debug('noo ?');
 
   console.debug('Chat Group Controller: ', chatController);
 
@@ -785,6 +843,45 @@ function prepareChat(chatController, isOwner) {
   });
 
 }
+
+function inviteParticipants(chatController) {
+
+  let inviteModal = $('.invite-chat');
+  let inviteBtn = inviteModal.find('.btn-modal-invite');
+
+  inviteBtn.on('click', function(event) {
+
+    event.preventDefault();
+
+    let usersIDs = inviteModal.find('.input-emails').val();
+    let domains = inviteModal.find('.input-domains').val();
+
+    let usersIDsParsed = [];
+    if (usersIDs.includes(',')) {
+      usersIDsParsed = usersIDs.split(', ');
+    } else {
+      usersIDsParsed.push(usersIDs);
+    }
+
+    let domainsParsed = [];
+    if (domains.includes(',')) {
+      domainsParsed = domains.split(', ');
+    } else {
+      domainsParsed.push(domains);
+    }
+
+    chatController.addUser(usersIDsParsed, domainsParsed).then(function(result) {
+      console.debug('Invite emails', result);
+    }).catch(function(reason) {
+      console.log('Error:', reason);
+    });
+
+  });
+
+  inviteModal.openModal();
+
+}
+
 function chatManagerReady(chatController, isOwner) {
 
   let chatSection = $('.chat-section');
@@ -939,25 +1036,15 @@ function closeChat(chatController) {
   });
 
 }
-function onInvitation(event) {
-  console.log('On Invitation: ', event);
 
-  groupChatHyperty.join(event.url).then(function(chatController) {
-    prepareChat(chatController);
+function onStatusInvitation(event) {
+  console.debug('On status Invitation: ', event);
 
-    setTimeout(() => {
-      let users = event.value.participants;
-
-      users.forEach((user) => {
-        processNewUser(user);
-      });
-
-    }, 500);
-
+  userStatusHyperty.join(event.url).then(function(status) {
+    console.debug('status is: ', status);
   }).catch(function(reason) {
-    console.error('Error connectin to', reason);
+    console.error('Error getting status to', reason);
   });
-
 }
 
 function updateRelativeTime() {
@@ -976,31 +1063,6 @@ function updateRelativeTime() {
 /**************************************************************************************************************** */
 
 
-// function processMessage(email, message) {
-//   console.debug('############################### processMessage: ', message);
-//   let msg = (typeof message.text !== 'undefined') ? message.text.replace(/\n/g, '<br>') : message;
-//   let chatSection = $('#' + email.split('@')[0]).find('.chat-section');
-//   let avatar = '';
-//   let from = '';
-
-//   if (message.identity) {
-//     avatar = message.identity.avatar;
-//     from = message.identity.cn;
-//   }
-
-//   let messagesList = chatSection.find('.messages .collection'); //getUserNicknameByEmail(remoteUser)
-//   let ts = Math.round((new Date()).getTime() / 1000, 10);
-//   // $('#' + email.split('@')[0]).find('.startChat').remove();
-
-//   let list = `<li class="collection-item avatar ` + (message.isMe ? 'local' : 'remote') + `">
-//     <span class="time-relative right" ts="` + ts + `">` + moment.unix(ts).fromNow() + `</span>
-//     <span class="title left">` + getUserNicknameByEmail(email) + `</span>
-//     <img src="` + defaultAvatar + `" alt="" class="circle">
-//     <p class="left">` + msg + `</p>
-//     </li>`;
-//   messagesList.append(list);
-//   messagesList.scrollTop(messagesList[0].scrollHeight);
-// }
 
 /**
  * Return nickname corresponding to email
@@ -1024,91 +1086,18 @@ function showUserDetail(email) {
   $('#tab-manager').find('li[rel="'+email+'"]').trigger('click');
   console.debug('active tab is', $('#tab-manager').find('li[rel="'+email+'"]').trigger('click'));
   customDiscovery(email)
-  
-  // return new Promise((resolve, reject) => {
-  //   let userPrefix = email.split('@')[0];
-  //   if ($('#' + userPrefix).length === 0) {
-  //     console.log('############################### add tab for user', email);
-  //     $('#tab-manager').append('<li class="tab col s3" rel="' + email + '"><a href="#' + userPrefix + '">' + userPrefix + '</a></li>');
-  //     $('#main').append('<div id="' + userPrefix + '" class="col s12"></div>');
-  //     return userStatusHyperty._discovery.discoverHypertiesPerUser(email, domain).then((discoveredHyperties) => {
-  //       console.debug('discoveredHyperties[Object.keys(discoveredHyperties)] is :', discoveredHyperties)
-        
-  //       let size = Object.keys(discoveredHyperties).length;
-       
-
-  //       console.debug('############################### Discovered descriptor ', discoveredHyperties[Object.keys(discoveredHyperties)[0]]);
-  //       for ( let i = 0; i <  size; i++) {
-  //         console.debug(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);
-  //         if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "UserStatus") {
-  //           statusHyperty.push(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);               
-  //           console.debug('statusHyperty:', statusHyperty)
-  //         } else if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "GroupChat") {
-  //           DiscChat.push(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);
-  //           console.debug('chatHyperty:', DiscChat);
-  //         } else if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "Connector") {
-  //           WebRTCHyperty.push(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);
-  //           console.debug('connectorHyperty :', WebRTCHyperty)
-  //         }
-  //       }
-  //       // let WebRTCHypertyURL = discoveredHyperties.hypertyURL;
-  //       // console.debug('############################### Discovered WebRTCHypertyURL', WebRTCHypertyURL);
-  
-  //       Handlebars.getTemplate('tpl/user-details').then((template) => {
-  //         $('#' + userPrefix).append(template({
-  //           UserId: statusHyperty.userID,
-  //           DescriptorURL:statusHyperty.descriptor,
-  //           email: email,
-  //           username: getUserNicknameByEmail(email),
-  //           PeerstatusURL: statusHyperty.hypertyID,
-  //           PeerChatURL: DiscChat.hypertyID,
-  //           PeerWebRTCURL:WebRTCHyperty.hypertyID,
-  //           avatar: defaultAvatar
-  //         }));
-  //         $('#tab-manager').tabs('select_tab', userPrefix);
-  //         resolve();
-  //       });
-  //     }).catch((reason) => {
-  //       reject(reason);
-  //     });
-
-  //         // });
-  //       // });
-
-
-  //     //  userStatusHyperty._discovery.discoverHypertyPerUser(email, domain).then((data) => {
-  //     //   console.log('############################### show user detail for: ', data);
-  //     //   Handlebars.getTemplate('tpl/user-details').then((template) => {
-  //     //     $('#' + userPrefix).append(template({
-  //     //       UserId: data.id,
-  //     //       DescriptorURL:data.descriptor,
-  //     //       email: email,
-  //     //       username: getUserNicknameByEmail(email),
-  //     //       HypertyURL: data.hypertyURL,
-  //     //       avatar: defaultAvatar
-  //     //     }));
-  //     //     $('#tab-manager').tabs('select_tab', userPrefix);
-  //     //     resolve();
-  //     //   });
-  //     // }).catch((reason) => {
-  //     //   reject(reason);
-  //     // });
-  //   } else {
-  //     console.log('############################### tab for user', email, 'already exist');
-  //     resolve();
-  //   }
-  // });
 }
 
 function customDiscovery(email) {
 
   return new Promise((resolve, reject) => {
     let userPrefix = email.split('@')[0];
+    let userAvatar = '';
     if ($('#' + userPrefix).length === 0) {
       console.log('############################### add tab for user', email);
       $('#tab-manager').append('<li class="tab col s3" rel="' + email + '"><a href="#' + userPrefix + '">' + userPrefix + '</a></li>');
       $('#main').append('<div id="' + userPrefix + '" class="col s12"></div>');
-      return userStatusHyperty._discovery.discoverHypertiesPerUser(email, domain).then((discoveredHyperties) => {
+      return userStatusHyperty.discovery.discoverHypertiesPerUser(email, domain).then((discoveredHyperties) => {
         console.debug('discoveredHyperties[Object.keys(discoveredHyperties)] is :', discoveredHyperties)
         
         let size = Object.keys(discoveredHyperties).length;
@@ -1118,21 +1107,28 @@ function customDiscovery(email) {
           console.debug(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);
           if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "UserStatus") {
             statusHyperty.push(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);               
-            // console.debug('statusHyperty:', statusHyperty)
-          } else if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "GroupChat") {
+            console.debug('statusHyperty:', statusHyperty)
+          } else if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "GroupChatManager") {
             DiscChat.push(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);
-            // console.debug('chatHyperty:', DiscChat);
+            console.debug('chatHyperty:', DiscChat);
           } else if(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.substr(discoveredHyperties[Object.keys(discoveredHyperties)[i]].descriptor.lastIndexOf('/') + 1) === "Connector") {
             WebRTCHyperty.push(discoveredHyperties[Object.keys(discoveredHyperties)[i]]);
-            // console.debug('connectorHyperty :', WebRTCHyperty)
+            console.debug('WebRTCHyperty :', WebRTCHyperty)
           }
         }
           stHyperty = getLatestHypertyPerUser(statusHyperty);
           chHyperty = getLatestHypertyPerUser(DiscChat);
           RTCHyperty = getLatestHypertyPerUser(WebRTCHyperty);
           console.debug('statusHyperty:', stHyperty)
-          console.debug('chatHyperty:', chHyperty);
-          console.debug('connectorHyperty :', RTCHyperty)
+          console.debug('chHyperty:', chHyperty);
+          console.debug('RTCHyperty :', RTCHyperty)
+          userURL = stHyperty.userID;   
+          console.debug('user avatar is :', avatar, email);
+           if(avatar[email] == email)  {
+             console.debug('user avatar is :', avatar[email]);
+           }
+   
+          
 
         Handlebars.getTemplate('tpl/user-details').then((template) => {
           $('#' + userPrefix).append(template({
@@ -1141,9 +1137,9 @@ function customDiscovery(email) {
             email: email,
             username: getUserNicknameByEmail(email),
             PeerstatusURL: stHyperty.hypertyID,
-            // PeerChatURL: chHyperty.hypertyID,
+            PeerChatURL: chHyperty.hypertyID,
             PeerWebRTCURL:RTCHyperty.hypertyID,
-            avatar: defaultAvatar
+            avatar: avatar[email] 
           }));
           $('#tab-manager').tabs('select_tab', userPrefix);
           resolve();
@@ -1193,257 +1189,6 @@ function getLatestHypertyPerUser(hypertyObj) {
     return lastHyperty;
 }
 
-// function prepareChat(chatController, email) {
-
-//   console.debug('############################### Chat Group Controller: ', chatController, email);
-//   return new Promise((resolve, reject) => {
-//     let userPrefix = email.split('@')[0];
-//     if ($('#' + userPrefix).find('.message-form').length > 0) {
-//       console.debug('############################### container chat already exist for', email);
-//       resolve(chatController);
-//     } else {
-//       console.debug('############################### add container chat for', email);
-//       Handlebars.getTemplate('tpl/chat-section').then((html) => {
-//         let containerEl = $('#' + userPrefix).find('.chat-section');
-//         containerEl.removeClass('hide').append(html);
-
-//         let messageForm = containerEl.find('.message-form');
-//         let textArea = messageForm.find('.materialize-textarea');
-
-//         textArea.on('keyup', (e) => {
-//           if (e.keyCode === 13 && !e.shiftKey) {
-//             messageForm.submit();
-//           }
-//         });
-
-//         messageForm.on('submit', (e) => {
-//           e.preventDefault();
-
-//           let message = messageForm.find('[name="message"]').val();
-//           chatController.sendMessage(message).then(function(result) {
-//             console.debug('############################### message sent', result);
-//             // messageForm.get(0).reset();
-//             processMessage(email, result);
-//             messageForm.get(0).reset();
-//           }).catch(function(reason) {
-//             console.error('############################### Error: ', reason);
-//           });
-//         });
-//         resolve(chatController);
-//       }).catch(() => {
-//         reject();
-//       });
-//     }
-//   });
-// }
-
-/****************************************** Call ******************************************/
-// function openVideo(hypertyURL) {
-
-//   var options = options || {video: true, audio: true};
-//   getUserMedia(options).then(function(mediaStream) {
-//     console.log('############################### received media stream: ', mediaStream);
-//     return connectorHyperty.connect(hypertyURL, mediaStream, 'roomID', domain);
-//   })
-//   .then(function(controller) {
-//     console.log('############################### showVideo: ', controller);
-//     showVideo(controller);
-//     processLocalVideo(localMediaStream);
-
-//     // controller.addEventListener('on:notification', notification);
-//     // controller.addEventListener('on:subscribe', function(controller) {
-//     //   console.info('on:subscribe:event ', controller);
-//     // });
-
-//     // controller.addEventListener('connector:notification', notification);
-
-//     // controller.addEventListener('stream:added', processVideo);
-
-//   }).catch(function(reason) {
-//     console.error('###############################', reason);
-//   });
-// }
-
-// function processVideo(event) {
-//   console.log('############################### processVideo: ', event);
-
-//   var messageChat = $('.video-holder');
-//   var video = messageChat.find('.video');
-//   video[0].src = URL.createObjectURL(event.stream);
-// }
-
-// function notification(event) {
-//   console.log('############################### notification: ', event);
-// }
-
-// function notificationHandler(controller, event) {
-//   console.log('############################### notificationHandler: ', controller, event);
-//   var calleeInfo = event.identity;
-//   var incoming = $('.modal-call');
-//   var acceptBtn = incoming.find('.btn-accept');
-//   var rejectBtn = incoming.find('.btn-reject');
-//   var informationHolder = incoming.find('.information');
-
-//   console.log('############################### showVideo: ', controller);
-//   showVideo(controller);
-
-//   controller.addEventListener('stream:added', processVideo);
-
-//   acceptBtn.on('click', function(e) {
-
-//     e.preventDefault();
-
-//     var options = options || {video: true, audio: true};
-//     getUserMedia(options).then(function(mediaStream) {
-//       console.info('recived media stream: ', mediaStream);
-//       return controller.accept(mediaStream);
-//     })
-//     .then(function(result) {
-//       console.log(result);
-//     }).catch(function(reason) {
-//       console.error('###############################', reason);
-//     });
-
-//   });
-
-//   rejectBtn.on('click', function(e) {
-
-//     controller.decline().then(function(result) {
-//       console.log(result);
-//     }).catch(function(reason) {
-//       console.error('###############################', reason);
-//     });
-
-//     e.preventDefault();
-//   });
-
-//   var parseInformation = '<div class="col s12">' +
-//         '<div class="row valign-wrapper">' +
-//           '<div class="col s2">' +
-//             '<img src="' + calleeInfo.infoToken.picture + '" alt="" class="circle responsive-img">' +
-//           '</div>' +
-//           '<span class="col s10">' +
-//             '<div class="row">' +
-//               '<span class="col s3 text-right">Name: </span>' +
-//               '<span class="col s9 black-text">' + calleeInfo.infoToken.name + '</span>' +
-//             '</span>' +
-//             '<span class="row">' +
-//               '<span class="col s3 text-right">Email: </span>' +
-//               '<span class="col s9 black-text">' + calleeInfo.infoToken.email + '</span>' +
-//             '</span>' +
-//             '<span class="row">' +
-//               '<span class="col s3 text-right">locale: </span>' +
-//               '<span class="col s9 black-text">' + calleeInfo.infoToken.locale + '</span>' +
-//             '</span>' +
-//           '</div>' +
-//         '</div>';
-
-//   informationHolder.html(parseInformation);
-//   $('.modal-call').openModal();
-
-// }
-
-// function processLocalVideo(mediaStream) {
-//   console.log('Process Local Video: ', mediaStream);
-
-//   var videoHolder = $('.video-holder');
-//   var video = videoHolder.find('.my-video');
-//   video[0].src = URL.createObjectURL(mediaStream);
-// }
-
-
-// function processLocalVideo(controller) {
-//
-//   var localStreams = controller.getLocalStreams;
-//   for (var stream of localStreams) {
-//     console.log('Local stream: ' + stream.id);
-//   }
-//
-// }
-
-// function showVideo(controller) {
-//   var videoHolder = $('.video-holder');
-//   videoHolder.removeClass('hide');
-
-//   var btnCamera = videoHolder.find('.camera');
-//   var btnMute = videoHolder.find('.mute');
-//   var btnMic = videoHolder.find('.mic');
-//   var btnHangout = videoHolder.find('.hangout');
-
-//   console.log(controller);
-
-//   btnCamera.on('click', function(event) {
-
-//     event.preventDefault();
-
-//     controller.disableCam().then(function(status) {
-//       console.log(status, 'camera');
-//       var icon = 'videocam_off';
-//       var text = 'Disable Camera';
-//       if (!status) {
-//         text = 'Enable Camera';
-//         icon = 'videocam';
-//       }
-
-//       var iconEl = '<i class="material-icons left">' + icon + '</i>';
-//       $(event.currentTarget).html(iconEl);
-//     }).catch(function(reason) {
-//       console.error('###############################', reason);
-//     });
-
-//   });
-
-//   btnMute.on('click', function(event) {
-
-//     event.preventDefault();
-
-//     controller.mute().then(function(status) {
-//       console.log(status, 'audio');
-//       var icon = 'volume_off';
-//       var text = 'Disable Sound';
-//       if (!status) {
-//         text = 'Enable Sound';
-//         icon = 'volume_up';
-//       }
-
-//       var iconEl = '<i class="material-icons left">' + icon + '</i>';
-//       $(event.currentTarget).html(iconEl);
-//     }).catch(function(e) {
-//       console.error(e);
-//     });
-
-//     console.log('mute other peer');
-
-//   });
-
-//   btnMic.on('click', function(event) {
-
-//     event.preventDefault();
-
-//     controller.disableMic().then(function(status) {
-//       console.log(status, 'mic');
-//       var icon = 'mic_off';
-//       var text = 'Disable Microphone';
-//       if (!status) {
-//         icon = 'mic';
-//         text = 'Enable Microphone';
-//       }
-
-//       var iconEl = '<i class="material-icons left">' + icon + '</i>';
-//       $(event.currentTarget).html(iconEl);
-//     }).catch(function(e) {
-//       console.error(e);
-//     });
-
-//   });
-
-//   btnHangout.on('click', function(event) {
-
-//     event.preventDefault();
-
-//     console.log('hangout');
-//   });
-// }
 
 function getUserMedia(constraints) {
 
