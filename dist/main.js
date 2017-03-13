@@ -13,6 +13,7 @@ var avatar = {};
 var callHyperty = void 0;
 var RTCHyperty = void 0;
 var DiscChat = [];
+var Visitors = {};
 var statusHyperty = [];
 var WebRTCHyperty = [];
 var connectorHyperty = null;
@@ -21,9 +22,9 @@ var rethink = require('./factories/rethink');
 var domain = config.domain;
 var btnCall = void 0;
 
-var userDirectory = [['openidtest10@gmail.com', 'TestOpenID 10', 'localhost'], ['jtestapizee@gmail.com', 'TestApizee', 'localhost'], ['openidtest20@gmail.com', 'TestOpenID 20', 'localhost']];
+var userDirectory = [['openidtest10@gmail.com', 'TestOpenID 10', 'localhost'], ['openidtest20@gmail.com', 'TestOpenID 20', 'localhost'], ['openidtest13@gmail.com', 'TestOpenID 13', 'localhost']];
 
-var visitorDirectory = [['anajb006@gmail.com', 'PersoanlGmail', 'localhost']];
+var visitorDirectory = [['jtestapizee@gmail.com', 'TestApizee', 'localhost']];
 
 var defaultAvatar = 'img/photo.jpg';
 
@@ -237,17 +238,22 @@ function init() {
   Handlebars.getTemplate('tpl/user-card').then(function (template) {
     var participants = [];
     $.each(userDirectory, function (i, v) {
+      console.debug('v[0] :', v[0]);
+      // console.debug('v[1] :', v[1] )
+      // console.debug('v[2] :', v[2] )
       if (v[0] !== localStorage.username) {
         $('#user-list').append(template({ email: v[0], username: v[1] }));
         participants.push({ email: v[0], domain: v[2] });
+        console.debug('participants : ', participants);
       }
     });
+
     $.each(visitorDirectory, function (i, v) {
-      // if (v[0] !== localStorage.username) {
-      console.debug('v[0]:', v);
-      $('#visitor-list').append(template({ email: v[0], username: v[1] }));
-      participants.push({ email: v[0], domain: v[2] });
-      // }
+      if (v[0] !== localStorage.username) {
+        console.debug('v[0]:', v);
+        $('#visitor-list').append(template({ email: v[0], username: v[1] }));
+        participants.push({ email: v[0], domain: v[2] });
+      }
     });
     console.debug('############################### invite for user presence participants:', participants);
     userStatusHyperty.create(participants).then(function (res) {
@@ -273,60 +279,50 @@ function init() {
       console.error('###############################', reason);
     });
   });
+
   // bind statusChange event for presence update
   userStatusHyperty.addEventListener('statusChange', function (event) {
-    console.log('############################### handle statusChange event for', event);
+    console.debug('############################### handle statusChange event for', event);
     var email = typeof event !== 'undefined' && typeof event.identity !== 'undefined' ? event.identity.userProfile.username : 'none';
-
-    $('#visitor-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
-    var messagesList = $('#visitor-list').find('[rel="' + email + '"]');
-
+    // update contacts status
+    $.each(userDirectory, function (i, v) {
+      console.debug('v[0] :', v[0]);
+      if (v[0] == email) {
+        $('#user-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+        //  let messagesList =   $('#user-list').find('[rel="' + email + '"]');
+      }
+    });
+    // update Visitors status
+    $.each(visitorDirectory, function (i, v) {
+      if (v[0] == email) {
+        console.debug('v[0]:', v);
+        $('#visitor-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
+        // let messagesList =   $('#visitor-list').find('[rel="' + email + '"]');
+      }
+    });
     var from = '';
-
     avatar[event.identity.userProfile.username] = event.identity.userProfile.avatar;
 
-    // let list = `<li class="collection-item avatar">
-    //   <img src="` + avatar + `" alt="" class="circle"></li>`;
-    // messagesList.append(list);
-    // $('#user-list').addClass(event.identity.userProfile.avatar);
     var items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
+
     if (event.status === 'unavailable' || event.status === 'away') {
       items.addClass('disable');
     } else {
       items.removeClass('disable');
     }
   });
-  // bind statusChange event for presence update
+
+  // Agents statusChange event for presence update
   userStatusHyperty.addEventListener('statusChange', function (event) {
     console.log('############################### handle statusChange event for', event);
     var email = typeof event !== 'undefined' && typeof event.identity !== 'undefined' ? event.identity.userProfile.username : 'none';
 
     $('#agents-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
-    var messagesList = $('#agents-list').find('[rel="' + email + '"]');
+    // let messagesList =   $('#agents-list').find('[rel="' + email + '"]');
 
     var from = '';
 
     avatar[event.identity.userProfile.username] = event.identity.userProfile.avatar;
-    var items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
-    if (event.status === 'unavailable' || event.status === 'away') {
-      items.addClass('disable');
-    } else {
-      items.removeClass('disable');
-    }
-  });
-
-  // bind statusChange event for presence update
-  userStatusHyperty.addEventListener('statusChange', function (event) {
-    console.log('############################### handle statusChange event for', event);
-    var email = typeof event !== 'undefined' && typeof event.identity !== 'undefined' ? event.identity.userProfile.username : 'none';
-
-    $('#visitor-list').children('[rel="' + email + '"]').removeClass('state-available state-unavailable state-busy state-away').addClass('state-' + event.status);
-    var messagesList = $('#visitor-list').find('[rel="' + email + '"]');
-
-    var from = '';
-
-    avatar[event.identity.userProfile.username] = event.identity.userProfile.avatar;
-
     var items = $('#' + email.split('@')[0]).add($('#tab-manager').find('[rel="' + email + '"]'));
     if (event.status === 'unavailable' || event.status === 'away') {
       items.addClass('disable');
@@ -339,12 +335,6 @@ function init() {
 /*************************************************** reTHINK WebRTC Call **********************************************************/
 
 function WebRTCnotificationHandler(controller, identity) {
-  // Handlebars.getTemplate('tpl/video-section').then(function(template) {
-  //       let html = template();
-  //       $mainContent.html(html);
-  //       $('#' + userPrefix).find('.video-section').append(html);
-  //         event.preventDefault();
-  //       }); 
 
   var calleeInfo = identity;
   var incoming = $('.modal-call');
@@ -1000,8 +990,8 @@ function customDiscovery(email) {
     var userAvatar = '';
     if ($('#' + userPrefix).length === 0) {
       console.log('############################### add tab for user', email);
-      $('#tab-manager').append('<li class="tab col s3" rel="' + email + '"><a href="#' + userPrefix + '">' + userPrefix + '</a></li>');
-      $('#main').append('<div id="' + userPrefix + '" class="col s12"></div>');
+      $('#tab-manager').find('.active').html('<li class="tab col s3" rel="' + email + '"><a href="#' + userPrefix + '">' + userPrefix + '</a></li>');
+      $('#main').html('<div id="' + userPrefix + '" class="col s12"></div>');
       return userStatusHyperty.discovery.discoverHypertiesPerUser(email, domain).then(function (discoveredHyperties) {
         console.debug('discoveredHyperties[Object.keys(discoveredHyperties)] is :', discoveredHyperties);
 
