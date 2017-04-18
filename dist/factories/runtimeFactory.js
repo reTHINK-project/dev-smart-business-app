@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _WindowSandbox = require('../sandboxes/WindowSandbox');
+
+var _WindowSandbox2 = _interopRequireDefault(_WindowSandbox);
+
 var _SandboxBrowser = require('../sandboxes/SandboxBrowser');
 
 var _SandboxBrowser2 = _interopRequireDefault(_SandboxBrowser);
@@ -30,15 +34,45 @@ var _RuntimeCapabilities = require('./RuntimeCapabilities');
 
 var _RuntimeCapabilities2 = _interopRequireDefault(_RuntimeCapabilities);
 
+var _dexie = require('dexie');
+
+var _dexie2 = _interopRequireDefault(_dexie);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// import StorageManagerFake from './StorageManagerFake';
-
-var Dexie = require('dexie');
-
 var runtimeFactory = Object.create({
-  createSandbox: function createSandbox() {
-    return new _SandboxBrowser2.default();
+  createSandbox: function createSandbox(capabilities) {
+    var _this = this;
+
+    return new Promise(function (resolve) {
+
+      var sandbox = void 0;
+      var isWindowSandbox = '';
+      var SandboxCapabilities = {};
+      if (capabilities.hasOwnProperty('windowSandbox') && capabilities.windowSandbox) isWindowSandbox = 'windowSandbox';
+
+      // TODO this should be corrected.. now is only for testing
+      _this.capabilitiesManager.isAvailable(isWindowSandbox).then(function (result) {
+        if (result) {
+          // TODO: to be retrieved from capabilitiesManager
+          SandboxCapabilities = { "windowSandbox": true };
+
+          console.info('[createSandbox ] - windowSandbox');
+          sandbox = new _WindowSandbox2.default(SandboxCapabilities);
+        } else {
+          console.info('[createSandbox ] - sandbox');
+          sandbox = new _SandboxBrowser2.default(SandboxCapabilities);
+        }
+
+        resolve(sandbox);
+      }).catch(function (reason) {
+        console.log('[createSandbox ] By default create a normal sandbox: ', reason);
+        console.info('[createSandbox ] - sandbox');
+        sandbox = new _SandboxBrowser2.default(capabilities);
+
+        resolve(sandbox);
+      });
+    });
   },
   createAppSandbox: function createAppSandbox() {
     return new _AppSandboxBrowser2.default();
@@ -61,28 +95,42 @@ var runtimeFactory = Object.create({
     return atob(b64);
   }),
   storageManager: function storageManager() {
-    // Using the implementation of Service Framework
-    // Dexie is the IndexDB Wrapper
-    var db = new Dexie('cache');
-    var storeName = 'objects';
 
-    return new _StorageManager2.default(db, storeName);
+    if (!this.storage) {
+      // Using the implementation of Service Framework
+      // Dexie is the IndexDB Wrapper
+      var db = new _dexie2.default('cache');
+      var storeName = 'objects';
+      this.storage = new _StorageManager2.default(db, storeName);
+    }
 
-    // return new StorageManagerFake('a', 'b');
+    return this.storage;
   },
   persistenceManager: function persistenceManager() {
-    var localStorage = window.localStorage;
-    return new _PersistenceManager2.default(localStorage);
-  },
-  createRuntimeCatalogue: function createRuntimeCatalogue(development) {
+    if (!this.localStorage) {
+      window.localStorage;
+      this.localStorage = new _PersistenceManager2.default(localStorage);
+    }
 
-    if (!this.catalogue) this.catalogue = new _RuntimeCatalogue.RuntimeCatalogue(this);
+    return this.localStorage;
+  },
+  createRuntimeCatalogue: function createRuntimeCatalogue() {
+
+    if (!this.catalogue) {
+      this.catalogue = new _RuntimeCatalogue.RuntimeCatalogue(this);
+    }
 
     return this.catalogue;
   },
-  runtimeCapabilities: function runtimeCapabilities(storageManager) {
-    return new _RuntimeCapabilities2.default(storageManager);
+  runtimeCapabilities: function runtimeCapabilities() {
+    if (!this.capabilitiesManager) {
+      this.capabilitiesManager = new _RuntimeCapabilities2.default(this.storage);
+    }
+
+    return this.capabilitiesManager;
   }
 });
+
+// import StorageManagerFake from './StorageManagerFake';
 
 exports.default = runtimeFactory;

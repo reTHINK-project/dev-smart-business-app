@@ -44,6 +44,7 @@ module.exports = function(passport) {
                 // if there are any errors, return the error before anything else
                 if (err)
                     return done(err);
+   
 
                 // if no user is found, return the message
                 if (!user)

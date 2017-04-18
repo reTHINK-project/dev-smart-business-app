@@ -26,6 +26,7 @@ var configDB = require('./config/database.js');
 // configuration ===============================================================
 var privateKey = fs.readFileSync('./app/ssl/myKey.key');
 var certificate = fs.readFileSync('./app/ssl/myCert.crt');
+var passportOneSessionPerUser = require('passport-one-session-per-user')
 var httpsOptions = {key: privateKey, cert: certificate};
 // your express configuration here
 
@@ -47,9 +48,13 @@ app.use(bodyParser()); // get information from html forms
 app.set('view engine', 'ejs'); // set up ejs for templating
 
 // required for passport
-app.use(session({ secret: 'ilovescotchscotchyscotchscotch' })); // session secret
+app.use(session({ secret: 'rethink' })); // session secret
+passport.use(new passportOneSessionPerUser())
+app.use(passport.authenticate('passport-one-session-per-user'))
 app.use(passport.initialize());
 app.use(passport.session()); // persistent login sessions
+
+
 app.use(flash()); // use connect-flash for flash messages stored in session
 console.log(__dirname);
 

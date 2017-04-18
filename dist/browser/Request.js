@@ -12,33 +12,46 @@ var methods = { GET: 'get', POST: 'post', DELETE: 'delete', UPDATE: 'update' };
 
 var Request = function () {
   function Request() {
+    var _this = this;
+
     _classCallCheck(this, Request);
 
-    console.log('Browser Request');
-
-    var _this = this;
+    this._withCredentials = false;
 
     Object.keys(methods).forEach(function (method) {
 
-      _this[methods[method]] = function (url) {
+      switch (method) {
 
-        return new Promise(function (resolve, reject) {
+        case 'GET':
+          _this[methods[method]] = function (url) {
+            return _this._makeLocalRequest(method, url);
+          };
 
-          _this._makeLocalRequest(methods[method], url).then(function (result) {
-            resolve(result);
-          }).catch(function (reason) {
-            reject(reason);
-          });
-        });
-      };
+          break;
+
+        case 'POST':
+        case 'DELETE':
+        case 'UPDATE':
+          _this[methods[method]] = function (url) {
+            var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+            return _this._makeLocalRequest(method, url, options);
+          };
+          break;
+      }
     });
   }
 
   _createClass(Request, [{
     key: '_makeLocalRequest',
-    value: function _makeLocalRequest(method, url) {
+    value: function _makeLocalRequest(method, url, options) {
+      var _this2 = this;
 
-      console.log(method, url);
+      if (!options) {
+        options = null;
+      }
+
+      console.log('method:', method, '| url: ', url, options ? ' | payload:' + options : '');
 
       return new Promise(function (resolve, reject) {
         var protocolmap = {
@@ -47,14 +60,11 @@ var Request = function () {
           'http://': 'https://'
         };
 
-        var usedProtocol = void 0;
-
         var foundProtocol = false;
         for (var protocol in protocolmap) {
           if (url.slice(0, protocol.length) === protocol) {
             // console.log("exchanging " + protocol + " with " + protocolmap[protocol]);
             url = protocolmap[protocol] + url.slice(protocol.length, url.length);
-            usedProtocol = protocolmap[protocol];
             foundProtocol = true;
             break;
           }
@@ -65,13 +75,16 @@ var Request = function () {
           return;
         }
 
-        var xhr = new XMLHttpRequest();
+        var xhr = void 0;
+        if (!_this2.xhr) {
+          xhr = new XMLHttpRequest();
+          xhr.withCredentials = _this2._withCredentials;
+          _this2.xhr = xhr;
+        } else {
+          xhr = _this2.xhr;
+        }
 
-        console.log(url);
-
-        xhr.open('GET', url, true);
-
-        xhr.onreadystatechange = function (event) {
+        xhr.addEventListener('readystatechange', function (event) {
           var xhr = event.currentTarget;
           if (xhr.readyState === 4) {
             // console.log("got response:", xhr);
@@ -82,10 +95,30 @@ var Request = function () {
               reject(xhr.responseText);
             }
           }
-        };
+        });
 
-        xhr.send();
+        xhr.open(method, url);
+
+        if (method === 'POST') {
+          /*
+          xhr.setRequestHeader('content-type', 'application/json');
+          xhr.setRequestHeader('cache-control', 'no-cache');
+          */
+          xhr.send(options);
+        } else {
+          xhr.send();
+        }
       });
+    }
+  }, {
+    key: 'withCredentials',
+    set: function set() {
+      var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+      this._withCredentials = value;
+    },
+    get: function get() {
+      return this._withCredentials;
     }
   }]);
 

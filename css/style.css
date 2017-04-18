@@ -27,6 +27,12 @@ main {
 .notification-list {
     margin: 0;
 }
+.Init-Chat {
+    position: absolute;
+    left: 600px;
+     right: -100;
+    top: 400px;
+}
 
 .page-flexbox-wrapper {
     display: flex;
@@ -72,3 +78,4 @@ main {
     font-size: 0.7em;
     color: rgb(121, 121, 121);
 }
+

@@ -12,12 +12,15 @@ var _minibus = require('runtime-core/dist/minibus');
 
 var _minibus2 = _interopRequireDefault(_minibus);
 
+var _IdentitiesGUI = require('./IdentitiesGUI');
+
+var _IdentitiesGUI2 = _interopRequireDefault(_IdentitiesGUI);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// jshint
+window.components = {}; // jshint
 // Runtime
 
-window.components = {};
 var minibus = new _minibus2.default();
 
 var runtimeProxy = {
@@ -107,8 +110,10 @@ var rethink = {
       console.log('Install configuration: ', development, domain, runtimeURL);
 
       var catalogue = _runtimeFactory2.default.createRuntimeCatalogue(development);
+      var runtimeDescriptor = void 0;
 
       catalogue.getRuntimeDescriptor(runtimeURL).then(function (descriptor) {
+        runtimeDescriptor = descriptor;
 
         if (descriptor.sourcePackageURL === '/sourcePackage') {
           return descriptor.sourcePackage;
@@ -119,48 +124,55 @@ var rethink = {
 
         window.eval(sourcePackage.sourceCode);
 
-        var runtime = new Runtime(_runtimeFactory2.default, domain);
+        var runtime = new Runtime(runtimeDescriptor, _runtimeFactory2.default, domain);
+
         window.runtime = runtime;
 
-        minibus.addListener('core:loadHyperty', function (msg) {
-          console.log('Load Hyperty: ', msg);
+        runtime.init().then(function (result) {
 
-          var resultMsg = {};
-          resultMsg.from = msg.to;
-          resultMsg.to = msg.from;
-          resultMsg.body = {};
+          var identitiesGUI = new _IdentitiesGUI2.default(runtime.identityModule);
+          console.log('identitiesGUI: ', identitiesGUI);
 
-          //TODO: Work the message errors, probably use message factory
-          runtime.loadHyperty(msg.body.value.descriptor).then(function (result) {
-            resultMsg.body.value = result;
-            minibus._onMessage(resultMsg);
-          }).catch(function (reason) {
-            resultMsg.body.value = reason;
-            resultMsg.body.code = 404;
-            minibus._onMessage(resultMsg);
+          minibus.addListener('core:loadHyperty', function (msg) {
+            console.log('Load Hyperty: ', msg);
+
+            var resultMsg = {};
+            resultMsg.from = msg.to;
+            resultMsg.to = msg.from;
+            resultMsg.body = {};
+
+            //TODO: Work the message errors, probably use message factory
+            runtime.loadHyperty(msg.body.value.descriptor, true).then(function (result) {
+              resultMsg.body.value = result;
+              minibus._onMessage(resultMsg);
+            }).catch(function (reason) {
+              resultMsg.body.value = reason;
+              resultMsg.body.code = 404;
+              minibus._onMessage(resultMsg);
+            });
           });
-        });
 
-        minibus.addListener('core:loadStub', function (msg) {
-          console.log('Load Stub:', msg);
+          minibus.addListener('core:loadStub', function (msg) {
+            console.log('Load Stub:', msg);
 
-          var resultMsg = {};
-          resultMsg.from = msg.to;
-          resultMsg.to = msg.from;
-          resultMsg.body = {};
+            var resultMsg = {};
+            resultMsg.from = msg.to;
+            resultMsg.to = msg.from;
+            resultMsg.body = {};
 
-          //TODO: Work the message errors, probably use message factory
-          runtime.loadStub(msg.body.value.domain).then(function (result) {
-            resultMsg.body.value = result;
-            minibus._onMessage(resultMsg);
-          }).catch(function (reason) {
-            resultMsg.body.value = reason;
-            resultMsg.body.code = 400;
-            minibus._onMessage(resultMsg);
+            //TODO: Work the message errors, probably use message factory
+            runtime.loadStub(msg.body.value.domain).then(function (result) {
+              resultMsg.body.value = result;
+              minibus._onMessage(resultMsg);
+            }).catch(function (reason) {
+              resultMsg.body.value = reason;
+              resultMsg.body.code = 400;
+              minibus._onMessage(resultMsg);
+            });
           });
-        });
 
-        resolve(runtimeProxy);
+          resolve(runtimeProxy);
+        });
       }).catch(function (reason) {
         console.error(reason);
         reject(reason);

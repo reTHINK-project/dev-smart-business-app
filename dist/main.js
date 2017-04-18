@@ -41,6 +41,7 @@ function logout() {
 function startApp() {
   $('#app').removeClass('hide');
   $('#loading').addClass('hide');
+  $('#openid').addClass('hide');
   $('#currentUser').text(localStorage.getItem('username'));
   startRethink();
 }
@@ -50,10 +51,13 @@ $(function () {
     console.log('############################### already logged with...', localStorage.username);
     startApp();
   }
+
   $('#account-example > li').on('click', function () {
     $('#email').val($(this).children('.account-mail').text()).focus();
     $('#pass').val($(this).children('.account-pwd').text()).focus();
+    $('#password-again').val($(this).children('.account-pwd').text()).focus();
   });
+
   $('#login').on('submit', function (e) {
     e.preventDefault();
     console.log('############################### authenticate through service with...', $('#email').val());
@@ -64,6 +68,7 @@ $(function () {
       console.log('############################### form is not valid...');
     }
   });
+
   // visitor mode
   $('#contactUS').on('submit', function (e) {
     e.preventDefault();
@@ -167,23 +172,14 @@ function init() {
     btnCall = $(this);
     $(this).hide();
     console.debug('############################### start call with', email);
-    // Handlebars.getTemplate('tpl/video-section').then(function(template) {
-    // let html = template();
-    // $mainContent.html(html);
-    // $('#' + userPrefix).find('.video-section').append(html);
     event.preventDefault();
     console.debug('event is :', event);
     var userURLtest = $(event.currentTarget).parent().attr('data-user');
     console.debug('userURL is : ', userURLtest);
     var hypertyURL = $(event.currentTarget).parent().attr('data-url');
-    // let roomID = document.getElementById('roomName').value;
     var roomID = 'Test';
-
-    // let domain = hypertyURL.substring(hypertyURL.lastIndexOf(':') + 3, hypertyURL.lastIndexOf('/'));
     console.debug('Domain:', domain);
     openVideo(userURL, roomID, domain);
-
-    // });  
   });
 
   // user directory click
@@ -239,8 +235,6 @@ function init() {
     var participants = [];
     $.each(userDirectory, function (i, v) {
       console.debug('v[0] :', v[0]);
-      // console.debug('v[1] :', v[1] )
-      // console.debug('v[2] :', v[2] )
       if (v[0] !== localStorage.username) {
         $('#user-list').append(template({ email: v[0], username: v[1] }));
         participants.push({ email: v[0], domain: v[2] });
@@ -253,9 +247,13 @@ function init() {
         console.debug('v[0]:', v);
         $('#visitor-list').append(template({ email: v[0], username: v[1] }));
         participants.push({ email: v[0], domain: v[2] });
+        $('.preloader-wrapper').remove();
+        $('.card .card-action').removeClass('center');
+        $('.hyperties-list-holder').removeClass('hide');
       }
     });
     console.debug('############################### invite for user presence participants:', participants);
+
     userStatusHyperty.create(participants).then(function (res) {
       console.debug('############################### invite for user presence ok', res);
     }).catch(function (reason) {
@@ -992,7 +990,7 @@ function customDiscovery(email) {
       console.log('############################### add tab for user', email);
       $('#tab-manager').find('.active').html('<li class="tab col s3" rel="' + email + '"><a href="#' + userPrefix + '">' + userPrefix + '</a></li>');
       $('#main').html('<div id="' + userPrefix + '" class="col s12"></div>');
-      return userStatusHyperty.discovery.discoverHypertiesPerUser(email, domain).then(function (discoveredHyperties) {
+      return groupChatHyperty.discovery.discoverHypertiesPerUser(email, domain).then(function (discoveredHyperties) {
         console.debug('discoveredHyperties[Object.keys(discoveredHyperties)] is :', discoveredHyperties);
 
         var size = Object.keys(discoveredHyperties).length;

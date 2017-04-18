@@ -63,7 +63,7 @@ var RuntimeCapabilities = function () {
 
         _this2.storageManager.get('capabilities').then(function (capabilities) {
 
-          console.log('Capability ' + capability + ' is available? ', capabilities.hasOwnProperty(capability) && capabilities[capability]);
+          console.log('[RuntimeCapabilities isAvailable?] ' + capability + ' is ', capabilities.hasOwnProperty(capability) && capabilities[capability]);
           if (capabilities.hasOwnProperty(capability) && capabilities[capability]) {
             resolve(true);
           } else {
@@ -96,6 +96,7 @@ var RuntimeCapabilities = function () {
       // TODO: this should be more effective and check the environment
       return {
         browser: !!(window && navigator),
+        windowSandbox: !!(window && navigator),
         node: !!!(window && navigator)
       };
     }

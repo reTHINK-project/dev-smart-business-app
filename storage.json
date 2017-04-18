@@ -2,6 +2,8 @@
     "openedPathsList": {
         "files": [],
         "folders": [
+            "/home/jamal/Desktop/Smart-business-App",
+            "/home/jamal/Desktop/Smart-business-App/dev-smart-business-app",
             "/home/jamal/Desktop/jamal-dev/testbeds",
             "/home/jamal/Desktop/jamal-dev/dev-hyperty-toolkit",
             "/home/jamal/Desktop/jamal-dev/dev-hyperty",
@@ -71,6 +73,6 @@
         "editor.action.goToDeclaration": "F12",
         "workbench.action.gotoLine": "Ctrl+G"
     },
-    "pickerWorkingDir": "/home/jamal/Desktop/jamal-dev",
+    "pickerWorkingDir": "/home/jamal/Desktop",
     "theme": "vs-dark vscode-theme-monokai-themes-Monokai-tmTheme"
 }
