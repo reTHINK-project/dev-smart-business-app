@@ -55,7 +55,7 @@ function startApp() {
 $(function() {
   if (typeof localStorage.username !== 'undefined') {
     console.log('############################### already logged with...', localStorage.username);
-    startApp();
+    // startApp();
   }
 
   $('#account-example > li').on('click', function() {
