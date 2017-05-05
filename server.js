@@ -69,7 +69,7 @@ app.use('/', express.static(__dirname, + '/'));
 //         cert: fs.readFileSync('./app/ssl/myCert.crt').toString(),
 //         key: fs.readFileSync('./app/ssl/myKey.key').toString()
 //       }, app);
-server = https.createServer(httpsOptions, app).listen(port, HOST);
+server = https.createServer(httpsOptions, app).listen(port);
 console.log('HTTPS Server listening on %s:%s', HOST, port);
 // app.listen(port);
 console.log('The magic happens on port https://localhost:'+port);
