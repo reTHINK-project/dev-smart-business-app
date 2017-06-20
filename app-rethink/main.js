@@ -1110,8 +1110,7 @@ function customDiscovery(email) {
            if(avatar[email] == email)  {
              console.debug('user avatar is :', avatar[email]);
            }
-   
-          
+           
 
         Handlebars.getTemplate('tpl/user-details').then((template) => {
           $('#' + userPrefix).append(template({
